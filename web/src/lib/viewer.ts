@@ -1,5 +1,6 @@
 // Viewer side of the phase-1 P2P transport (see host.ts).
 
+import { handleRoomMessage, type RoomEvents } from "./room";
 import { Signaling, type SignalMessage } from "./signaling";
 
 export type ViewerStatus =
@@ -11,7 +12,7 @@ export type ViewerStatus =
   | "reconnecting"
   | "error";
 
-export type ViewerEvents = {
+export type ViewerEvents = RoomEvents & {
   onStatus: (status: ViewerStatus, reason?: string) => void;
   onStream: (stream: MediaStream | null) => void;
 };
@@ -24,17 +25,26 @@ export class ViewerSession {
 
   constructor(
     roomId: string,
+    name: string,
     private iceServers: RTCIceServer[],
     private events: ViewerEvents,
   ) {
     events.onStatus("connecting");
     this.signaling = new Signaling(
-      { room: roomId, role: "viewer" },
+      { room: roomId, role: "viewer", name },
       (m) => this.onMessage(m),
       (unexpected) => {
         if (unexpected && !this.stopped) this.events.onStatus("error", "disconnected");
       },
     );
+  }
+
+  sendChat(text: string) {
+    this.signaling.send("chat", undefined, { text });
+  }
+
+  rename(name: string) {
+    this.signaling.send("rename", undefined, { name });
   }
 
   stop() {
@@ -44,6 +54,7 @@ export class ViewerSession {
   }
 
   private onMessage(m: SignalMessage) {
+    if (handleRoomMessage(m, this.events)) return;
     switch (m.type) {
       case "welcome":
         this.events.onStatus(m.data.hostOnline ? "waiting-stream" : "waiting-host");

@@ -26,6 +26,7 @@ type Room struct {
 	host      *Client
 	viewers   map[string]*Client
 	idleSince time.Time // when the host was last seen (or the room was created)
+	chat      []ChatMessage // recent history, sent to whoever joins
 }
 
 // Hub owns every room. All room fields are guarded by mu.
@@ -81,7 +82,7 @@ func (h *Hub) roomInfo(id string) (RoomInfo, bool) {
 
 // join attaches a client to a room. It returns an error code for the client
 // ("room-not-found", "bad-token", "room-full") or "" on success.
-func (h *Hub) join(c *Client, roomID, token string) string {
+func (h *Hub) join(c *Client, roomID, token, name string) string {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 
@@ -90,6 +91,8 @@ func (h *Hub) join(c *Client, roomID, token string) string {
 		return "room-not-found"
 	}
 	c.room = r
+	c.name = cleanName(name, c.role)
+	c.joinedAt = time.Now()
 
 	if c.role == roleHost {
 		if token != r.HostToken {
@@ -107,10 +110,12 @@ func (h *Hub) join(c *Client, roomID, token string) string {
 		}
 		c.sendMsg(Message{Type: "welcome", Data: mustJSON(map[string]any{
 			"role": roleHost, "peerId": c.id, "viewers": ids, "maxViewers": h.cfg.MaxViewers,
+			"participants": r.participants(), "chat": r.chat,
 		})})
 		for _, v := range r.viewers {
 			v.sendMsg(Message{Type: "host-online"})
 		}
+		h.broadcastParticipants(r)
 		log.Printf("room %s: host connected (%d viewers waiting)", r.ID, len(ids))
 		return ""
 	}
@@ -120,11 +125,13 @@ func (h *Hub) join(c *Client, roomID, token string) string {
 	}
 	r.viewers[c.id] = c
 	c.sendMsg(Message{Type: "welcome", Data: mustJSON(map[string]any{
-		"role": roleViewer, "peerId": c.id, "hostOnline": r.host != nil,
+		"role": roleViewer, "peerId": c.id, "hostOnline": r.host != nil, "maxViewers": h.cfg.MaxViewers,
+		"participants": r.participants(), "chat": r.chat,
 	})})
 	if r.host != nil {
 		r.host.sendMsg(Message{Type: "viewer-joined", Data: mustJSON(map[string]string{"peerId": c.id})})
 	}
+	h.broadcastParticipants(r)
 	log.Printf("room %s: viewer %s joined (%d/%d)", r.ID, c.id, len(r.viewers), h.cfg.MaxViewers)
 	return ""
 }
@@ -146,6 +153,7 @@ func (h *Hub) leave(c *Client) {
 		for _, v := range r.viewers {
 			v.sendMsg(Message{Type: "host-left"})
 		}
+		h.broadcastParticipants(r)
 		log.Printf("room %s: host disconnected", r.ID)
 	case roleViewer:
 		if r.viewers[c.id] != c {
@@ -155,6 +163,7 @@ func (h *Hub) leave(c *Client) {
 		if r.host != nil {
 			r.host.sendMsg(Message{Type: "viewer-left", Data: mustJSON(map[string]string{"peerId": c.id})})
 		}
+		h.broadcastParticipants(r)
 		log.Printf("room %s: viewer %s left", r.ID, c.id)
 	}
 }

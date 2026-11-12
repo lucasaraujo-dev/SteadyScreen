@@ -38,6 +38,11 @@ type Client struct {
 	role string
 	room *Room // set by Hub.join, guarded by Hub.mu
 
+	// Guarded by Hub.mu.
+	name     string
+	sharing  string // "", "screen" or "camera" (host only)
+	joinedAt time.Time
+
 	conn      *websocket.Conn
 	send      chan []byte
 	done      chan struct{}
@@ -130,6 +135,14 @@ func (h *Hub) readPump(c *Client) {
 			if c.role == roleViewer {
 				h.relay(c, m)
 			}
+		case "chat":
+			h.chatMessage(c, m.Data)
+		case "rename":
+			h.rename(c, m.Data)
+		case "state": // host tells the room what it is sharing
+			if c.role == roleHost {
+				h.setSharing(c, m.Data)
+			}
 		}
 	}
 }
@@ -160,7 +173,7 @@ func (h *Hub) serveWS(w http.ResponseWriter, r *http.Request) {
 	}
 	go c.writePump()
 
-	if code := h.join(c, q.Get("room"), q.Get("token")); code != "" {
+	if code := h.join(c, q.Get("room"), q.Get("token"), q.Get("name")); code != "" {
 		c.sendMsg(Message{Type: "error", Data: mustJSON(map[string]string{"reason": code})})
 		c.close()
 		return

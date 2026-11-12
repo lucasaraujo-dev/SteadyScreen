@@ -712,20 +712,7 @@ input::placeholder {
   color: rgba(17, 18, 20, 0.42);
 }
 
-/* ---------- session pages ---------- */
-
-.session {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 330px;
-  gap: 20px;
-  align-items: start;
-}
-
-@media (max-width: 900px) {
-  .session {
-    grid-template-columns: 1fr;
-  }
-}
+/* ---------- stage ---------- */
 
 .stage {
   position: relative;
@@ -801,51 +788,9 @@ input::placeholder {
   border-color: rgba(255, 255, 255, 0.4);
 }
 
-.panel {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  padding: 22px;
-  border-radius: var(--radius);
-}
-
-.panel h2 {
-  font-size: 0.72rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--muted);
-  margin-bottom: 10px;
-}
-
-.field {
-  display: flex;
-  gap: 8px;
-}
-
-.field input {
-  flex: 1;
-  min-width: 0;
-  font-family: var(--font-geist-mono), monospace;
-  font-size: 0.82rem;
-}
-
 .hint {
   margin-top: 8px;
   font-size: 0.85rem;
-  color: var(--muted);
-}
-
-.stat {
-  font-size: 1.8rem;
-  font-weight: 600;
-  letter-spacing: -0.02em;
-}
-
-.stat small {
-  font-size: 0.9rem;
-  font-weight: 400;
-  letter-spacing: 0;
   color: var(--muted);
 }
 
@@ -947,4 +892,183 @@ input::placeholder {
   .spinner {
     animation-duration: 3s;
   }
+}
+
+/* =====================================================================
+   Screens + page transition (Screen.tsx)
+   ===================================================================== */
+
+.screen {
+  position: relative;
+  isolation: isolate; /* keeps each screen's background layers inside it */
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+/* The browser's own root snapshot must not crossfade under the slide. */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(.nav-forward),
+::view-transition-group(.nav-back) {
+  animation-duration: 0.7s;
+}
+
+/* Forward: the current screen leaves to the left, the next one comes from the right. */
+::view-transition-old(.nav-forward) {
+  animation: 0.7s cubic-bezier(0.76, 0, 0.24, 1) both screen-out-left;
+}
+::view-transition-new(.nav-forward) {
+  animation: 0.7s cubic-bezier(0.76, 0, 0.24, 1) both screen-in-right;
+}
+
+/* Back: the reverse. */
+::view-transition-old(.nav-back) {
+  animation: 0.7s cubic-bezier(0.76, 0, 0.24, 1) both screen-out-right;
+}
+::view-transition-new(.nav-back) {
+  animation: 0.7s cubic-bezier(0.76, 0, 0.24, 1) both screen-in-left;
+}
+
+@keyframes screen-out-left {
+  to {
+    transform: translateX(-100%);
+  }
+}
+@keyframes screen-in-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+@keyframes screen-out-right {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes screen-in-left {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(.nav-forward),
+  ::view-transition-new(.nav-forward),
+  ::view-transition-old(.nav-back),
+  ::view-transition-new(.nav-back) {
+    animation: 0.2s ease both fade-swap;
+  }
+  ::view-transition-old(.nav-forward),
+  ::view-transition-old(.nav-back) {
+    animation-direction: reverse;
+  }
+  @keyframes fade-swap {
+    from {
+      opacity: 0;
+    }
+  }
+}
+
+/* =====================================================================
+   Dark screen: the room pages (solid black, dark glass)
+   ===================================================================== */
+
+.screen-dark {
+  color-scheme: dark;
+  --text: #eef0f4;
+  --muted: rgba(238, 240, 244, 0.6);
+  --surface: rgba(255, 255, 255, 0.06);
+  --surface-strong: rgba(255, 255, 255, 0.12);
+  --line: rgba(255, 255, 255, 0.1);
+  --line-strong: rgba(255, 255, 255, 0.24);
+  --highlight: rgba(255, 255, 255, 0.08);
+  --danger: #ff6b74;
+  background: #08090b;
+  color: var(--text);
+}
+
+.screen-dark .glass {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.09);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.screen-dark .stage-screen {
+  background: rgba(255, 255, 255, 0.025);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+}
+
+.screen-dark input,
+.screen-dark select {
+  background: rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.screen-dark input::placeholder {
+  color: rgba(238, 240, 244, 0.4);
+}
+
+.screen-dark .btn:focus-visible,
+.screen-dark input:focus-visible {
+  outline-color: #eef0f4;
+}
+
+.screen-dark .btn-primary {
+  border-color: #eef0f4;
+  background: #eef0f4;
+  color: #08090b;
+}
+
+.screen-dark .btn-primary:hover:not(:disabled) {
+  background: #fff;
+  border-color: #fff;
+}
+
+.screen-dark .btn-danger:hover:not(:disabled) {
+  background: rgba(255, 107, 116, 0.12);
+  border-color: rgba(255, 107, 116, 0.4);
+}
+
+.screen-dark .badge {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.screen-dark .badge::before {
+  background: rgba(238, 240, 244, 0.4);
+}
+
+.screen-dark .badge-live::before {
+  background: var(--live);
+}
+
+.screen-dark .segmented button[aria-pressed="true"] {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #eef0f4;
+  box-shadow: inset 0 0 0 1px #eef0f4;
+}
+
+.screen-dark .alert {
+  border-color: rgba(255, 107, 116, 0.35);
+  background: rgba(255, 80, 95, 0.1);
+}
+
+.screen-dark .spinner {
+  border-color: rgba(255, 255, 255, 0.12);
+  border-top-color: #eef0f4;
+}
+
+/* White ink on black: the drip button inverts. */
+.screen-dark .ink-btn {
+  --ink: #eef0f4;
+  color: #08090b;
+}
+
+.screen-dark .ink-btn:focus-visible {
+  outline-color: #eef0f4;
 }

@@ -1,18 +1,15 @@
 import { Suspense } from "react";
-import { Brand } from "@/components/Logo";
 import ViewerView from "@/components/ViewerView";
+import Screen from "@/components/Screen";
 
 export const metadata = { title: "Assistindo · SteadyScreen" };
 
 export default function Page() {
   return (
-    <>
-      <div className="page-brand">
-        <Brand />
-      </div>
+    <Screen variant="dark">
       <Suspense fallback={<p className="loading">Carregando…</p>}>
         <ViewerView />
       </Suspense>
-    </>
+    </Screen>
   );
 }

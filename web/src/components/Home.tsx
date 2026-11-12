@@ -23,7 +23,7 @@ export default function Home() {
     try {
       const room = await createRoom();
       saveHostToken(room.id, room.hostToken);
-      router.push(`/compartilhar/${room.id}`);
+      router.push(`/compartilhar/${room.id}`, { transitionTypes: ["nav-forward"] });
     } catch {
       setError(errorText("server-offline"));
       setCreating(false);
@@ -34,7 +34,7 @@ export default function Home() {
     e.preventDefault();
     // Accept a bare code or a pasted link.
     const id = code.trim().split("/").filter(Boolean).pop()?.toLowerCase();
-    if (id) router.push(`/sala/${encodeURIComponent(id)}`);
+    if (id) router.push(`/sala/${encodeURIComponent(id)}`, { transitionTypes: ["nav-forward"] });
   }
 
   return (

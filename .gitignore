@@ -7,3 +7,4 @@ server/*.exe
 .idea/
 .DS_Store
 Thumbs.db
+server/*.exe~

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Unbounded } from "next/font/google";
-import InkBackground from "@/components/InkBackground";
 import "./globals.css";
+import "./room.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,12 +27,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable} ${unbounded.variable}`}>
-      <body>
-        <InkBackground />
-        {/* One sheet of liquid glass over the whole screen. */}
-        <div className="glass-screen" aria-hidden />
-        <main className="main">{children}</main>
-      </body>
+      {/* Each page brings its own full-screen background (see Screen.tsx). */}
+      <body>{children}</body>
     </html>
   );
 }

@@ -1,18 +1,15 @@
 import { Suspense } from "react";
-import { Brand } from "@/components/Logo";
 import HostView from "@/components/HostView";
+import Screen from "@/components/Screen";
 
 export const metadata = { title: "Compartilhando · SteadyScreen" };
 
 export default function Page() {
   return (
-    <>
-      <div className="page-brand">
-        <Brand />
-      </div>
+    <Screen variant="dark">
       <Suspense fallback={<p className="loading">Carregando…</p>}>
         <HostView />
       </Suspense>
-    </>
+    </Screen>
   );
 }

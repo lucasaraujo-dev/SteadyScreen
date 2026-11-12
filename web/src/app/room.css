@@ -1,0 +1,1827 @@
+/* Room layout: participants | stage | chat (HostView / ViewerView).
+   Lives on the dark screen (.screen-dark tokens). */
+
+.icon {
+  flex-shrink: 0;
+}
+
+.room {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+}
+
+/* Navbar: empty for now. */
+.room-nav {
+  flex-shrink: 0;
+  height: 56px;
+  margin: 12px 12px 0;
+  border-radius: 16px;
+}
+
+.room-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 320px;
+  gap: 12px;
+  padding: 12px;
+}
+
+/* ---------- side panels ---------- */
+
+.room-side {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 56px;
+  flex-shrink: 0;
+  padding: 0 12px 0 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.side-head h2 {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.side-count {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.side-empty {
+  padding: 18px 6px;
+  list-style: none;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.icon-btn:hover {
+  background: var(--surface-strong);
+  color: var(--text);
+}
+
+.side-head .icon-btn:hover {
+  transform: rotate(45deg); /* the gear turns a little */
+}
+
+.icon-btn:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 1px;
+}
+
+/* ---------- participants: the "dynamic island" ---------- */
+
+.people-rail {
+  position: relative;
+  z-index: 5; /* opens over the stage */
+  min-width: 0;
+}
+
+.island {
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 64px;
+  max-height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  border-radius: 32px;
+  background: #000;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 10px 30px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  outline: none;
+  /* Closing: smooth, no overshoot, so it never dips below the avatar width. */
+  transition:
+    width 0.42s cubic-bezier(0.32, 0.72, 0, 1),
+    border-radius 0.42s cubic-bezier(0.32, 0.72, 0, 1),
+    box-shadow 0.4s ease;
+}
+
+.island:hover,
+.island:focus-within {
+  width: 280px;
+  border-radius: 26px;
+  /* Opening: springy. */
+  transition:
+    width 0.55s var(--spring),
+    border-radius 0.55s var(--spring),
+    box-shadow 0.4s ease;
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.12),
+    0 24px 60px rgba(0, 0, 0, 0.7);
+}
+
+.island:focus-visible {
+  box-shadow:
+    0 0 0 2px #eef0f4,
+    0 24px 60px rgba(0, 0, 0, 0.7);
+}
+
+.island-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 30px;
+  flex-shrink: 0;
+  margin-bottom: 4px;
+  white-space: nowrap;
+}
+
+.island:hover .island-head,
+.island:focus-within .island-head {
+  justify-content: space-between;
+  padding: 0 6px 0 8px;
+}
+
+.island-title {
+  display: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.island:hover .island-title,
+.island:focus-within .island-title {
+  display: block;
+  animation: island-reveal 0.4s 0.08s ease both;
+}
+
+.island-count {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  font-size: 0.72rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.island-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+  list-style: none;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  border-radius: 999px;
+  transition: background 0.2s;
+}
+
+.island:hover .person:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #24262b;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: transform 0.4s var(--spring);
+}
+
+.avatar.is-host {
+  background: #eef0f4;
+  color: #08090b;
+}
+
+.avatar.is-self {
+  box-shadow:
+    0 0 0 2px #000,
+    0 0 0 3px rgba(255, 255, 255, 0.35);
+}
+
+.avatar.is-loading {
+  background: linear-gradient(90deg, #1a1b1f, #2a2c31, #1a1b1f);
+  background-size: 200% 100%;
+  animation: avatar-shimmer 1.2s linear infinite;
+}
+
+/* Status dot, visible even when the island is closed. */
+.avatar-dot {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 13px;
+  height: 13px;
+  border: 2.5px solid #000;
+  border-radius: 50%;
+}
+
+.avatar-dot.is-live {
+  background: var(--live);
+}
+
+.avatar-dot.is-watching {
+  background: #2fd27a;
+}
+
+/* Names and status only exist while the island is open. */
+.person-main,
+.person-status {
+  display: none;
+}
+
+.island:hover .person-main,
+.island:focus-within .person-main,
+.island:hover .person-status,
+.island:focus-within .person-status {
+  display: flex;
+  animation: island-reveal 0.4s 0.1s ease both;
+}
+
+.person-main {
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.person-name {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+
+.person-you,
+.person-role {
+  font-size: 0.76rem;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.person-status {
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  margin-right: 8px;
+  font-size: 0.74rem;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.person-status.is-live {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(229, 36, 47, 0.18);
+  color: #ff8a91;
+  font-weight: 600;
+}
+
+@keyframes island-reveal {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+    filter: blur(4px);
+  }
+}
+
+@keyframes avatar-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .island,
+  .avatar {
+    transition-duration: 0.01s;
+  }
+  .island-title,
+  .person-main,
+  .person-status {
+    animation: none !important;
+  }
+}
+
+/* ---------- chat ---------- */
+
+.chat-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 4px 14px 12px;
+  list-style: none;
+}
+
+.msg {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-top: 10px;
+}
+
+.msg.is-grouped {
+  margin-top: 3px;
+}
+
+.msg.is-mine {
+  align-items: flex-end;
+}
+
+.msg-meta {
+  margin: 0 4px 3px;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.msg-meta strong {
+  font-weight: 600;
+  color: var(--text);
+}
+
+.msg-bubble {
+  max-width: 88%;
+  padding: 8px 13px;
+  border-radius: 16px;
+  background: var(--surface-strong);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.msg.is-mine .msg-bubble {
+  background: #eef0f4;
+  color: #08090b;
+}
+
+.chat-form {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.chat-form input {
+  flex: 1;
+  min-width: 0;
+}
+
+.chat-send {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #eef0f4;
+  color: #08090b;
+  cursor: pointer;
+  transition:
+    transform 0.15s,
+    opacity 0.2s;
+}
+
+.chat-send:hover:not(:disabled) {
+  transform: scale(1.06);
+}
+
+.chat-send:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+/* ---------- center: stage, share buttons, invite ---------- */
+
+.room-center {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* The stage takes the exact shape of the picture, so it fills edge to edge:
+   no frame, no black bars. The area around it is just the page. */
+.stage-area {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  container-type: size;
+}
+
+.room-center .stage {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  overflow: visible; /* the screen inside clips the video; menus may pop out */
+  transition:
+    width 0.35s ease,
+    height 0.35s ease;
+}
+
+.room-center .stage.is-fit {
+  width: min(100cqw, 100cqh * var(--ar));
+  height: min(100cqh, 100cqw / var(--ar));
+  border: 0;
+}
+
+.room-center .stage-screen {
+  height: 100%;
+  aspect-ratio: auto;
+  border-radius: inherit;
+}
+
+.room-center .stage.is-fit .stage-screen {
+  box-shadow: none;
+}
+
+.room-center .stage.is-fit video {
+  background: transparent;
+}
+
+.room-center > .alert {
+  flex-shrink: 0;
+}
+
+.share-choices {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  width: min(300px, 100%);
+}
+
+/* Plain white, very round, no ink animation. */
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 58px;
+  padding: 0 28px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  color: #08090b;
+  font: inherit;
+  font-size: 1.02rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  transition:
+    transform 0.15s,
+    background 0.2s,
+    opacity 0.2s;
+}
+
+.share-btn:hover:not(:disabled) {
+  background: #e9ebef;
+}
+
+.share-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.share-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.share-btn:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.share-btn.is-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.18);
+}
+
+.share-btn.is-secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.screen-dark .stage-badge {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  background: rgba(8, 9, 11, 0.6);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+video.is-mirrored {
+  transform: scaleX(-1); /* a camera feels natural mirrored */
+}
+
+/* "Convidar pessoas": the same springy glass pill as the home room-code field. */
+.invite {
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.invite-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.invite-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: min(500px, 100%);
+  height: 52px;
+  padding: 0 6px 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.3);
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    width 0.6s var(--spring),
+    height 0.45s var(--spring),
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.invite-field:hover,
+.invite-field:focus-within {
+  width: min(580px, 100%);
+  height: 58px;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow:
+    0 0 0 5px rgba(255, 255, 255, 0.05),
+    0 20px 44px rgba(0, 0, 0, 0.45);
+  color: var(--text);
+}
+
+.invite-field > .icon {
+  transition: transform 0.5s var(--spring);
+}
+
+.invite-field:hover > .icon {
+  transform: rotate(-20deg) scale(1.12);
+}
+
+.screen-dark .invite-field input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.86rem;
+  color: var(--text);
+  text-overflow: ellipsis;
+  cursor: pointer;
+  outline: none;
+}
+
+.invite-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+  height: 40px;
+  padding: 0 16px 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #eef0f4;
+  color: #08090b;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  transition:
+    height 0.45s var(--spring),
+    background 0.3s ease,
+    color 0.3s ease,
+    transform 0.15s ease;
+}
+
+.invite-field:hover .invite-copy {
+  height: 46px;
+}
+
+.invite-copy:active {
+  transform: scale(0.96);
+}
+
+.invite.is-copied .invite-copy {
+  background: #2fd27a;
+  color: #04170c;
+  animation: invite-pop 0.5s var(--spring);
+}
+
+@keyframes invite-pop {
+  40% {
+    transform: scale(1.1);
+  }
+}
+
+.invite-hint {
+  margin-top: -4px;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invite-field,
+  .invite-field > .icon,
+  .invite-copy,
+  .icon-btn {
+    transition-duration: 0.01s;
+  }
+  .invite.is-copied .invite-copy {
+    animation: none;
+  }
+}
+
+/* ---------- fatal error ---------- */
+
+.room-message {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+}
+
+/* ---------- settings dialog ---------- */
+
+dialog.settings {
+  width: min(440px, calc(100vw - 32px));
+  margin: auto;
+  padding: 0;
+  border-radius: 22px;
+  background: #121317;
+  color: var(--text);
+}
+
+dialog.settings::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 18px 20px 20px;
+}
+
+.settings-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-head h2 {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-field > span {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* ---------- smaller screens: stack, center first ---------- */
+
+@media (max-width: 1100px) {
+  .room {
+    height: auto;
+    min-height: 100dvh;
+  }
+  .room-body {
+    grid-template-columns: 1fr;
+  }
+  .room-center {
+    order: -1;
+  }
+  .stage-area {
+    container-type: normal;
+  }
+  .room-center .stage,
+  .room-center .stage.is-fit {
+    width: 100%;
+    height: auto;
+    aspect-ratio: var(--ar, 16 / 9);
+  }
+  .room-side.chat {
+    height: 420px;
+  }
+  /* The island becomes a row of avatars; names show on tap/hover as a tooltip (title). */
+  .island,
+  .island:hover,
+  .island:focus-within {
+    position: static;
+    width: auto;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px 8px 8px;
+    border-radius: 36px;
+  }
+  .island-head {
+    order: 1;
+    margin: 0 0 0 auto;
+  }
+  .island-title,
+  .island:hover .island-title,
+  .island:focus-within .island-title,
+  .island:hover .person-main,
+  .island:focus-within .person-main,
+  .island:hover .person-status,
+  .island:focus-within .person-status {
+    display: none;
+  }
+  .island-list {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+}
+
+/* Stage label: a screen icon with a blue light running along its lines. */
+.screen-dark .stage-badge::before {
+  display: none;
+}
+
+.live-icon {
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+.live-icon g {
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.live-icon-base {
+  stroke: rgba(96, 165, 250, 0.35);
+}
+
+.live-icon-light {
+  stroke: #93c5fd;
+  stroke-dasharray: 22 78;
+  filter: drop-shadow(0 0 2px #3b82f6)
+    drop-shadow(0 0 4px rgba(59, 130, 246, 0.8));
+  animation: live-icon-run 1.6s linear infinite;
+}
+
+@keyframes live-icon-run {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-icon-light {
+    animation: none;
+    stroke-dasharray: none;
+  }
+}
+
+/* The "Tela de …" label only shows while the mouse is over the screen. */
+@media (hover: hover) {
+  .stage-badge {
+    opacity: 0;
+    transform: translateY(-4px);
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease;
+  }
+  .stage:hover .stage-badge,
+  .stage:focus-within .stage-badge {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- stage toolbar (bottom right, on hover) ---------- */
+
+.room-center .stage-toolbar,
+.stage:fullscreen .stage-toolbar {
+  z-index: 2;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 999px;
+  background: rgba(8, 9, 11, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+.tool-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #eef0f4;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.15s;
+}
+
+.tool-btn:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.tool-btn:active {
+  transform: scale(0.92);
+}
+
+.tool-btn.is-active {
+  background: #eef0f4;
+  color: #08090b;
+}
+
+.tool-btn:focus-visible {
+  outline: 2px solid #eef0f4;
+  outline-offset: 1px;
+}
+
+/* Label bubble above each button. */
+.tool-tip {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  right: 50%;
+  translate: 50% 0;
+  padding: 5px 10px;
+  border-radius: 8px;
+  background: #eef0f4;
+  color: #08090b;
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
+}
+
+.tool-btn:last-child .tool-tip {
+  right: 0;
+  translate: 0 0; /* keep the last label inside the screen */
+}
+
+.tool-btn:hover .tool-tip,
+.tool-btn:focus-visible .tool-tip {
+  opacity: 1;
+  transform: none;
+}
+
+/* Our own screen hidden from this page (the room still gets it). */
+.stage-hidden {
+  background: #101114;
+  color: var(--muted);
+}
+
+.stage-hidden .icon {
+  opacity: 0.7;
+}
+
+@media (hover: hover) {
+  .stage-toolbar {
+    opacity: 0;
+    transform: translateY(4px);
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease;
+  }
+  .stage:hover .stage-toolbar,
+  .stage:focus-within .stage-toolbar {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------- stream menu (gear on the stage: quality + FPS) ---------- */
+
+.stream-menu {
+  position: relative;
+}
+
+.stream-menu.is-open .tool-tip {
+  display: none;
+}
+
+/* Keep the controls up while the menu is open, even if the mouse leaves. */
+.stage .stage-toolbar:has(.stream-menu.is-open) {
+  opacity: 1;
+  transform: none;
+}
+
+.menu-panel {
+  position: absolute;
+  right: -5px;
+  bottom: calc(100% + 14px);
+  width: 220px;
+  padding: 6px;
+  border-radius: 16px;
+  background: rgba(16, 17, 20, 0.92);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 18px 40px rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  transform-origin: bottom right;
+  animation: menu-in 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+}
+
+.menu-row,
+.menu-back {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 10px 0 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #eef0f4;
+  font: inherit;
+  font-size: 0.88rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.menu-row:hover,
+.menu-back:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.menu-row:focus-visible,
+.menu-back:focus-visible {
+  outline: 2px solid #eef0f4;
+  outline-offset: -2px;
+}
+
+.menu-row[aria-checked="true"] {
+  font-weight: 600;
+}
+
+.menu-value {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--muted);
+}
+
+.menu-back {
+  justify-content: flex-start;
+  gap: 6px;
+  margin-bottom: 4px;
+  padding-left: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px 10px 4px 4px;
+  font-weight: 600;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-panel {
+    animation: none;
+  }
+}
+
+/* Mouse resting on the screen for a few seconds: controls and cursor fade away. */
+.stage[data-idle] {
+  cursor: none;
+}
+
+.stage[data-idle] .stage-toolbar,
+.stage[data-idle] .stage-badge {
+  opacity: 0;
+  transform: translateY(4px);
+  transition-duration: 0.6s;
+  pointer-events: none;
+}
+
+/* ---------- call bar (bottom center of the stage, host) ---------- */
+
+.call-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 10px 7px;
+  border-radius: 20px;
+  background: rgba(8, 9, 11, 0.6);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 12px 30px rgba(0, 0, 0, 0.4);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
+  translate: -50% 0;
+}
+
+/* A main button with its little arrow glued on the right. */
+.call-group {
+  position: relative;
+  --tone: rgba(255, 255, 255, 0.1);
+  --tone-hover: rgba(255, 255, 255, 0.17);
+  --ink: #eef0f4;
+  display: flex;
+  border-radius: 14px;
+  background: var(--tone);
+  color: var(--ink);
+  transition: background 0.2s;
+}
+
+.call-group.is-off {
+  --tone: rgba(255, 75, 85, 0.18);
+  --tone-hover: rgba(255, 75, 85, 0.28);
+  --ink: #ff7a82;
+}
+
+.call-group.is-active {
+  --tone: #eef0f4;
+  --tone-hover: #ffffff;
+  --ink: #08090b;
+}
+
+.call-group.is-stop,
+.call-group.is-leave {
+  --tone: #e5242f;
+  --tone-hover: #f33a45;
+  --ink: #fff;
+}
+
+.call-group.is-stop {
+  box-shadow: 0 8px 24px rgba(229, 36, 47, 0.45);
+}
+
+.call-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 44px;
+  border: 0;
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.15s;
+}
+
+.call-group.is-big .call-btn {
+  width: 72px;
+}
+
+.call-btn:hover {
+  background: var(--tone-hover);
+}
+
+/* The little arrow: a mini round button perched on the top-right corner. */
+.call-more {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 2px solid #0d0e11;
+  border-radius: 50%;
+  background: #2a2c31;
+  color: #eef0f4;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.call-more .icon {
+  width: 11px;
+  height: 11px;
+  stroke-width: 3;
+}
+
+.call-more:hover {
+  background: #3b3e45;
+  transform: scale(1.15);
+}
+
+.call-btn:active {
+  transform: scale(0.94);
+}
+
+.call-btn:focus-visible,
+.call-more:focus-visible {
+  outline: 2px solid #eef0f4;
+  outline-offset: 1px;
+}
+
+.call-btn:hover .tool-tip,
+.call-btn:focus-visible .tool-tip {
+  opacity: 1;
+  transform: none;
+}
+
+/* Center the tooltip over call buttons (the toolbar's right-edge rule doesn't apply here). */
+.call-btn .tool-tip {
+  right: 50%;
+  translate: 50% 0;
+}
+
+@media (hover: hover) {
+  .call-bar {
+    opacity: 0;
+    transform: translateY(4px);
+    transition:
+      opacity 0.25s ease,
+      transform 0.25s ease;
+  }
+  .stage:hover .call-bar,
+  .stage:focus-within .call-bar {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.stage[data-idle] .call-bar {
+  opacity: 0;
+  transform: translateY(4px);
+  transition-duration: 0.6s;
+  pointer-events: none;
+}
+
+/* ---------- call button menus (e.g. microphone options) ---------- */
+
+.call-group.is-open .call-more {
+  background: #eef0f4;
+  color: #08090b;
+}
+
+/* Keep the bar up while one of its menus is open. */
+.stage .call-bar:has(.call-group.is-open) {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+
+.call-menu {
+  position: absolute;
+  bottom: calc(100% + 16px);
+  left: -10px;
+  z-index: 3;
+  width: 300px;
+  /* No inner scroll: the menu grows to fit, and open lists float over its edge. */
+  overflow: visible;
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(16, 17, 20, 0.96);
+  color: #eef0f4;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 24px 50px rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  transform-origin: bottom left;
+  animation: menu-in 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
+  text-align: left;
+}
+
+.mic-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.menu-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.menu-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.menu-field select {
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 10px;
+  font-size: 0.86rem;
+  color: #eef0f4;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.menu-field-head {
+  display: flex;
+  justify-content: space-between;
+}
+
+.menu-field-head strong {
+  color: #eef0f4;
+  font-variant-numeric: tabular-nums;
+}
+
+.menu-row.is-soon {
+  cursor: default;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.soon-pill {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+/* Volume 0–200%, 100% in the middle. Above 100% the fill turns amber (boost). */
+.volume-range {
+  --track: rgba(255, 255, 255, 0.1);
+  --blue: #3b82f6;
+  --boost: #f59e0b;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 26px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+
+.volume-range::-webkit-slider-runnable-track {
+  height: 8px;
+  border-radius: 999px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5);
+  background:
+    /* notch at 100% */
+    linear-gradient(rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0.55)) 50%
+      50% / 2px 100% no-repeat,
+    linear-gradient(
+      to right,
+      #2563eb 0,
+      #60a5fa min(var(--fill), 50%),
+      var(--boost) min(var(--fill), 50%),
+      #fb923c var(--fill),
+      var(--track) var(--fill)
+    );
+}
+
+.volume-range::-moz-range-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--track);
+}
+
+.volume-range::-moz-range-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #2563eb, #60a5fa);
+}
+
+.volume-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -6px;
+  border: 4px solid var(--blue);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow:
+    0 0 0 4px rgba(59, 130, 246, 0.18),
+    0 3px 10px rgba(0, 0, 0, 0.5);
+  transition:
+    transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.volume-range::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: 4px solid var(--blue);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.18);
+}
+
+.volume-range:hover::-webkit-slider-thumb {
+  transform: scale(1.12);
+  box-shadow:
+    0 0 0 6px rgba(59, 130, 246, 0.22),
+    0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+.volume-range:active::-webkit-slider-thumb {
+  transform: scale(1.2);
+  box-shadow:
+    0 0 0 8px rgba(59, 130, 246, 0.28),
+    0 3px 12px rgba(0, 0, 0, 0.55);
+}
+
+/* Boosting above 100%: the thumb ring turns amber too. */
+.volume-range.is-boost::-webkit-slider-thumb {
+  border-color: var(--boost);
+  box-shadow:
+    0 0 0 4px rgba(245, 158, 11, 0.2),
+    0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+.volume-range.is-boost::-moz-range-thumb {
+  border-color: var(--boost);
+}
+
+.volume-range:focus-visible {
+  outline: none;
+}
+
+.volume-range:focus-visible::-webkit-slider-thumb {
+  box-shadow:
+    0 0 0 6px rgba(59, 130, 246, 0.45),
+    0 3px 10px rgba(0, 0, 0, 0.5);
+}
+
+.menu-field-head strong.is-boost {
+  color: #fbbf24;
+}
+
+.volume-scale {
+  display: flex;
+  justify-content: space-between;
+  margin-top: -4px;
+  font-size: 0.68rem;
+}
+
+/* Live input level. */
+.mic-meter {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.mic-meter > span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(to right, #22c55e, #a3e635 70%, #f59e0b);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.06s linear;
+}
+
+.mic-meter.is-idle {
+  opacity: 0.4;
+}
+
+.menu-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #eef0f4;
+  font: inherit;
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.menu-toggle:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.menu-toggle:focus-visible {
+  outline: 2px solid #eef0f4;
+  outline-offset: -2px;
+}
+
+.menu-toggle-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.menu-toggle-text small {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 38px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  transition: background 0.2s;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.menu-toggle[aria-checked="true"] .switch {
+  background: #3b82f6;
+}
+
+.menu-toggle[aria-checked="true"] .switch::after {
+  transform: translateX(16px);
+}
+
+.menu-key {
+  padding: 0 10px;
+}
+
+.menu-key-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.menu-warning {
+  font-size: 0.74rem;
+  line-height: 1.35;
+  color: #fbbf24;
+}
+
+.menu-test {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 36px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: transparent;
+  color: #eef0f4;
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+
+.menu-test:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.menu-test:active {
+  transform: scale(0.97);
+}
+
+.key-pick {
+  min-width: 90px;
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #eef0f4;
+  font: inherit;
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.key-pick.is-picking {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+  animation: pulse-key 1s ease-in-out infinite;
+}
+
+@keyframes pulse-key {
+  50% {
+    border-color: rgba(59, 130, 246, 0.4);
+  }
+}
+
+/* ---------- styled dropdown (replaces the native select) ---------- */
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #eef0f4;
+  font: inherit;
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.dropdown-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.dropdown-btn:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 1px;
+}
+
+.dropdown.is-open .dropdown-btn {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.dropdown-value {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Arrow points down when closed, up when open. */
+.dropdown-btn .icon {
+  color: var(--muted);
+  transform: rotate(180deg);
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dropdown.is-open .dropdown-btn .icon {
+  transform: none;
+  color: #eef0f4;
+}
+
+.dropdown-list {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 4;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 5px;
+  border-radius: 12px;
+  background: #1a1b20;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 16px 36px rgba(0, 0, 0, 0.6);
+  list-style: none;
+  /* Long device lists still scroll with the wheel, without a visible bar. */
+  scrollbar-width: none;
+  transform-origin: top;
+  animation: dropdown-in 0.18s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+@keyframes dropdown-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scaleY(0.96);
+  }
+}
+
+.dropdown-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 36px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  color: #eef0f4;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.dropdown-option.is-active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.dropdown-option[aria-selected="true"] {
+  color: #93c5fd;
+  font-weight: 600;
+}
+
+.dropdown-option .icon {
+  color: #3b82f6;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-list {
+    animation: none;
+  }
+}
+
+.dropdown-list::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---- Share button menu: switch screen / window / tab ---- */
+.screen-now {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+}
+.screen-now-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.18);
+  color: #8fb6ff;
+}
+.screen-now-text {
+  display: grid;
+  min-width: 0;
+}
+.screen-now-text small {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.5);
+}
+.screen-now-text strong {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.screen-choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.screen-choice {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding: 12px 4px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+}
+.screen-choice:hover {
+  background: rgba(255, 255, 255, 0.09);
+  transform: translateY(-1px);
+}
+.screen-choice:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+.screen-choice.is-current {
+  border-color: rgba(59, 130, 246, 0.7);
+  background: rgba(59, 130, 246, 0.14);
+  color: #fff;
+}
+.menu-note {
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.45);
+}

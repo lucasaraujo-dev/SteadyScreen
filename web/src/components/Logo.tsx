@@ -8,7 +8,7 @@ export function LogoMark({ size = 32 }: { size?: number }) {
 /** Mark + name, linking home. */
 export function Brand({ size = 28 }: { size?: number }) {
   return (
-    <Link href="/" className="brand" aria-label="SteadyScreen, página inicial">
+    <Link href="/" className="brand" transitionTypes={["nav-back"]} aria-label="SteadyScreen, página inicial">
       <LogoMark size={size} />
       <span>SteadyScreen</span>
     </Link>
