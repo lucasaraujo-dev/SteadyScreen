@@ -1,6 +1,13 @@
-# SteadyScreen
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="brand/logo-white.png">
+    <img src="brand/logo-black.png" alt="Logo do SteadyScreen" width="120">
+  </picture>
+</p>
 
-Compartilhamento de tela de código aberto, direto do navegador.
+<h1 align="center">SteadyScreen</h1>
+
+<p align="center">Compartilhamento de tela de código aberto, direto do navegador.</p>
 
 > **Fase 1 (atual):** quem compartilha usa só o navegador (`getDisplayMedia`) e o vídeo vai direto,
 > por WebRTC, para até 5 pessoas assistindo (P2P). O servidor só apresenta os navegadores um ao outro.
