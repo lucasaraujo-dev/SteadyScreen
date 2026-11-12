@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
+import Logo3D from "@/components/Logo3D";
+import InkButton from "@/components/InkButton";
 import { createRoom, saveHostToken } from "@/lib/api";
 import { errorText } from "@/lib/messages";
 
@@ -10,6 +12,10 @@ export default function Home() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [code, setCode] = useState("");
+
+  const hasCode = code.trim().length > 0;
+  // A bare code (not a pasted link) is shown spaced out in monospace.
+  const isPlainCode = hasCode && !code.includes("/");
 
   async function share() {
     setCreating(true);
@@ -33,31 +39,51 @@ export default function Home() {
 
   return (
     <section className="hero">
+      <div className="hero-brand">
+        <Logo3D size={92} depth={18} />
+        <span className="wordmark">SteadyScreen</span>
+      </div>
       <h1>Compartilhe sua tela em segundos</h1>
       <p>Direto do navegador, sem instalar nada. Gere um link e mande para quem vai assistir.</p>
 
-      <button className="btn btn-primary btn-lg" onClick={share} disabled={creating}>
-        {creating ? "Criando sala…" : "Compartilhar minha tela"}
-      </button>
+      <div className="hero-actions">
+        <InkButton onClick={share} disabled={creating} busy={creating}>
+          {creating ? "Criando sala…" : "Crie sua sala"}
+        </InkButton>
+
+        <form className={`join${hasCode ? " has-value" : ""}`} onSubmit={join}>
+          <label className="join-field">
+            <svg className="join-icon" viewBox="0 0 24 24" aria-hidden>
+              <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L12 5.6" />
+              <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2" />
+            </svg>
+            <input
+              className={isPlainCode ? "is-code" : undefined}
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="Código da sala"
+              aria-label="Código da sala ou link"
+              autoComplete="off"
+              autoCapitalize="off"
+              spellCheck={false}
+            />
+            <button className="join-go" type="submit" disabled={!hasCode} aria-label="Assistir">
+              <span className="join-go-label">Assistir</span>
+              <svg viewBox="0 0 24 24" aria-hidden>
+                <path d="M5 12h14M13 6l6 6-6 6" />
+              </svg>
+            </button>
+          </label>
+          <p className="join-hint">Digite o código ou cole o link que recebeu</p>
+        </form>
+      </div>
 
       {error && (
-        <p className="alert" style={{ marginTop: 24 }}>
+        <p className="alert" style={{ marginTop: 32 }}>
           {error}
         </p>
       )}
 
-      <form className="join" onSubmit={join}>
-        <input
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          placeholder="Código da sala"
-          aria-label="Código da sala"
-          autoComplete="off"
-        />
-        <button className="btn" type="submit" disabled={!code.trim()}>
-          Assistir
-        </button>
-      </form>
     </section>
   );
 }

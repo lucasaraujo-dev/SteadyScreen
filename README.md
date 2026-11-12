@@ -43,7 +43,7 @@ npm install
 npm run dev
 ```
 
-Abra http://localhost:3000, clique em **Compartilhar minha tela** e abra o link da sala em outra aba.
+Abra http://localhost:3000, clique em **Crie sua sala**, depois em **Escolher tela**, e abra o link da sala em outra aba.
 
 ### Assistir de outro computador da mesma rede
 

@@ -66,6 +66,8 @@ export class ViewerSession {
         void this.onIce(m.data.candidate);
         break;
       case "error":
+        // The server closes the socket right after; keep this reason, not "disconnected".
+        this.stopped = true;
         this.events.onStatus("error", m.data?.reason ?? "unknown");
         break;
     }

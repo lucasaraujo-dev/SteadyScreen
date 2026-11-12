@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
+import InkButton from "@/components/InkButton";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { getConfig, loadHostToken } from "@/lib/api";
 import { HostSession, type Quality } from "@/lib/host";
@@ -103,7 +104,7 @@ export default function HostView() {
   const problem = token === null ? "bad-token" : error;
   if (problem === "bad-token" || problem === "server-offline" || problem === "unsupported") {
     return (
-      <div className="hero">
+      <div className="hero glass">
         <p className="alert">{errorText(problem)}</p>
         <p style={{ marginTop: 24 }}>
           <Link className="btn btn-primary" href="/">
@@ -117,19 +118,21 @@ export default function HostView() {
 
   return (
     <div className="session">
-      <div className="stage">
-        <video ref={previewRef} autoPlay muted playsInline hidden={!stream} />
-        {!stream && (
-          <div className="stage-empty">
-            <p>Escolha o que você quer mostrar: a tela inteira, uma janela ou uma aba.</p>
-            <button className="btn btn-primary btn-lg" onClick={startSharing} disabled={!ready}>
-              {ready ? "Escolher tela" : "Conectando…"}
-            </button>
-          </div>
-        )}
+      <div className="stage glass">
+        <div className="stage-screen">
+          <video ref={previewRef} autoPlay muted playsInline hidden={!stream} />
+          {!stream && (
+            <div className="stage-empty">
+              <p>Escolha o que você quer mostrar: a tela inteira, uma janela ou uma aba.</p>
+              <InkButton onClick={startSharing} disabled={!ready} busy={!ready}>
+                {ready ? "Escolher tela" : "Conectando…"}
+              </InkButton>
+            </div>
+          )}
+        </div>
       </div>
 
-      <aside className="panel">
+      <aside className="panel glass">
         <div>
           {stream ? (
             <span className="badge badge-live">Ao vivo</span>

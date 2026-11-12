@@ -97,6 +97,8 @@ export class HostSession {
         if (m.from) void this.onIce(m.from, m.data.candidate);
         break;
       case "error":
+        // The server closes the socket right after; keep this reason, not "disconnected".
+        this.stopped = true;
         this.events.onError(m.data?.reason ?? "unknown");
         break;
     }

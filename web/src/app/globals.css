@@ -1,28 +1,28 @@
-:root {
-  --bg: #f6f7f9;
-  --surface: #ffffff;
-  --border: #e3e6eb;
-  --text: #14171c;
-  --muted: #5d6573;
-  --accent: #2f6bff;
-  --accent-text: #ffffff;
-  --danger: #d6363f;
-  --live: #e5484d;
-  --ok: #1f9d55;
-  --stage: #0d0f13;
-  --radius: 12px;
-}
+/* SteadyScreen — black ink blobs on light gray (InkBackground.tsx), seen
+   through one full-screen sheet of liquid glass (.glass-screen). */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0e1014;
-    --surface: #171a20;
-    --border: #2a2f38;
-    --text: #e9ecf1;
-    --muted: #9aa3b2;
-    --accent: #4d82ff;
-    --stage: #000000;
-  }
+:root {
+  color-scheme: light;
+
+  --bg: #cccccc;
+  --text: #111214;
+  --muted: rgba(17, 18, 20, 0.72);
+  --danger: #c4262e;
+  --live: #e5242f;
+  --ok: #138a4a;
+
+  /* the full-screen glass sheet */
+  --glass-blur: 42px;
+
+  /* surfaces sitting on the glass (no extra blur: the sheet already blurs) */
+  --surface: rgba(255, 255, 255, 0.28);
+  --surface-strong: rgba(255, 255, 255, 0.5);
+  --line: rgba(0, 0, 0, 0.1);
+  --line-strong: rgba(0, 0, 0, 0.22);
+  --highlight: rgba(255, 255, 255, 0.7);
+
+  --radius: 24px;
+  --radius-sm: 14px;
 }
 
 * {
@@ -39,7 +39,7 @@ body {
 body {
   display: flex;
   flex-direction: column;
-  background: var(--bg);
+  background: var(--bg); /* same gray as the shader, shown until WebGL starts */
   color: var(--text);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
   line-height: 1.5;
@@ -51,15 +51,157 @@ a {
   text-decoration: none;
 }
 
+code {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.9em;
+}
+
+/* ---------- background + full-screen glass ---------- */
+
+.ink-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+}
+
+.ink-bg canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  animation: fade-in 0.8s ease-out;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Static version of the ink blobs (no WebGL), for weak devices. The glass
+   sheet above blurs it into the same soft shapes as the animated one. */
+.ink-static {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 66% 42%, #000 0 15vmax, transparent 15.2vmax),
+    radial-gradient(circle at 84% 20%, #000 0 7vmax, transparent 7.2vmax),
+    radial-gradient(circle at 76% 31%, #000 0 6vmax, transparent 6.2vmax),
+    radial-gradient(circle at 22% 72%, #000 0 8vmax, transparent 8.2vmax),
+    radial-gradient(circle at 86% 88%, #000 0 6vmax, transparent 6.2vmax),
+    radial-gradient(circle at 40% 18%, #000 0 4.5vmax, transparent 4.7vmax),
+    var(--bg);
+}
+
+.glass-screen {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.16);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(140%);
+}
+
+/* Light catching the glass: a soft sheen across the top. */
+.glass-screen::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(90% 55% at 15% 0%, rgba(255, 255, 255, 0.35), transparent 60%),
+    radial-gradient(70% 45% at 100% 100%, rgba(255, 255, 255, 0.12), transparent 60%);
+}
+
+/* Cards are just a slightly brighter area of the same glass. */
+.glass {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 20px 50px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 var(--highlight);
+}
+
 /* ---------- layout ---------- */
 
-.topbar {
-  display: flex;
-  align-items: center;
-  height: 56px;
-  padding: 0 24px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
+.main {
+  flex: 1;
+  width: 100%;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 40px 16px 48px;
+}
+
+/* ---------- home ---------- */
+
+.hero {
+  max-width: 720px; /* fits the button + open code field side by side */
+  margin: 8vh auto 0;
+  text-align: center;
+}
+
+.hero.glass {
+  padding: 48px 40px;
+  border-radius: 32px;
+}
+
+.hero:not(.glass) {
+  background: none;
+}
+
+/* ---------- brand ---------- */
+
+.logo-mark {
+  display: inline-block;
+  flex-shrink: 0;
+  background: currentColor;
+  -webkit-mask: url("/logo-mark.png") center / contain no-repeat;
+  mask: url("/logo-mark.png") center / contain no-repeat;
+}
+
+/* Extruded 3D logo (Logo3D.tsx). */
+.logo-3d {
+  display: inline-block;
+  perspective: 600px;
+}
+
+.logo-3d-solid {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transform: rotateX(16deg) rotateY(-26deg);
+  animation: logo-sway 7s ease-in-out infinite alternate;
+}
+
+.logo-3d-slice {
+  position: absolute;
+  inset: 0;
+  backface-visibility: visible;
+}
+
+.logo-3d-slice.is-face {
+  color: #111214;
+}
+
+/* Slow turn so the depth reads; the face never turns away. */
+@keyframes logo-sway {
+  from {
+    transform: rotateX(16deg) rotateY(-28deg);
+  }
+  to {
+    transform: rotateX(8deg) rotateY(24deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-3d-solid {
+    animation: none;
+  }
 }
 
 .brand {
@@ -70,119 +212,512 @@ a {
   letter-spacing: -0.01em;
 }
 
-.brand-dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 4px;
-  background: var(--accent);
+.page-brand {
+  margin-bottom: 20px;
 }
 
-.main {
-  flex: 1;
-  width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 24px 48px;
+.hero-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 22px;
 }
 
-/* ---------- home ---------- */
+.wordmark {
+  display: inline-block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
 
-.hero {
-  max-width: 560px;
-  margin: 10vh auto 0;
-  text-align: center;
+.hero h1,
+.hero > p {
+  max-width: 620px;
+  margin-inline: auto;
 }
 
 .hero h1 {
-  font-size: clamp(2rem, 5vw, 2.75rem);
-  line-height: 1.15;
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: clamp(1.9rem, 5vw, 3.1rem); /* Unbounded is wide: a bit smaller than before */
+  font-weight: 700;
+  line-height: 1.12;
   letter-spacing: -0.02em;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
-.hero p {
+.hero > p {
   color: var(--muted);
   font-size: 1.1rem;
-  margin-bottom: 32px;
+  margin-bottom: 34px;
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.7);
+}
+
+/* ---------- ink button (InkButton.tsx) ---------- */
+
+.ink-btn {
+  --ink: #111214;
+  --h: 56px;
+  --drip-room: 92px; /* space below the pill where runs hang and drops fall */
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--h);
+  padding: 0 34px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #fff;
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 600;
+  cursor: pointer;
+  isolation: isolate;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.ink-btn:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 4px;
+}
+
+.ink-btn:disabled {
+  cursor: default;
+}
+
+.ink-btn-defs {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+/* Everything inside here melts together through the goo filter. */
+.ink-btn-goo {
+  position: absolute;
+  inset: -14px -14px calc(-1 * var(--drip-room)) -14px;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.ink-btn-body {
+  position: absolute;
+  inset: 14px 14px var(--drip-room) 14px;
+  border-radius: 999px;
+  background: var(--ink);
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ink-btn:hover:not(:disabled) .ink-btn-body {
+  transform: scale(1.04, 1.08);
+}
+
+.ink-btn:active:not(:disabled) .ink-btn-body {
+  transform: scale(0.97, 0.92);
+  transition-duration: 0.12s;
+}
+
+/* Ink running down from the pill, slowly stretching and shrinking. */
+.ink-run {
+  position: absolute;
+  top: calc(100% - var(--drip-room) - 14px);
+  border-radius: 999px;
+  background: var(--ink);
+  transform: translateX(-50%) scaleY(0.85);
+  transform-origin: top center;
+  animation: ink-run 4s ease-in-out infinite alternate;
+}
+
+@keyframes ink-run {
+  to {
+    transform: translateX(-50%) scaleY(1.2);
+  }
+}
+
+.ink-drip {
+  position: absolute;
+  /* starts inside the pill's bottom edge, or at the tip of a run */
+  top: calc(100% - var(--drip-room) - 10px + var(--start, 0px));
+  border-radius: 50%;
+  background: var(--ink);
+  transform: translate(-50%, 0) scale(0.4);
+  animation: ink-drip 3.5s cubic-bezier(0.55, 0, 0.75, 0.4) infinite;
+  will-change: transform;
+}
+
+@keyframes ink-drip {
+  0% {
+    transform: translate(-50%, -6px) scale(0.4);
+  }
+  30% {
+    transform: translate(-50%, 4px) scale(1, 1.05); /* swelling under the edge */
+  }
+  58% {
+    transform: translate(-50%, 15px) scale(0.85, 1.6); /* stretching, still attached */
+  }
+  76% {
+    transform: translate(-50%, 30px) scale(0.75, 1.05); /* pinched off */
+  }
+  100% {
+    transform: translate(-50%, 44px) scale(0.1);
+  }
+}
+
+.ink-drip-hover {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.ink-btn:hover:not(:disabled) .ink-drip-hover,
+.ink-btn.is-busy .ink-drip-hover {
+  opacity: 1;
+}
+
+.ink-btn-label {
+  position: relative;
+  white-space: nowrap;
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ink-btn:active:not(:disabled) .ink-btn-label {
+  transform: scale(0.97);
+}
+
+.ink-btn.is-busy .ink-btn-label {
+  opacity: 0.75;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ink-run {
+    animation: none;
+  }
+  .ink-drip {
+    animation: none;
+    transform: translate(-50%, 6px) scale(1, 1.3); /* drops just hang there */
+  }
+  .ink-drip-hover {
+    display: none;
+  }
+}
+
+/* Room-code field: a glass pill that grows when focused. */
+/* Share button and room-code field on one row. The row has a fixed height
+   so the field growing on focus never nudges the button up or down. */
+.hero-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  height: 60px;
+  margin-bottom: 72px; /* room for the ink drops and the field's hint */
+}
+
+@media (max-width: 720px) {
+  .hero-actions {
+    flex-direction: column;
+    gap: 84px; /* drops fall between the two */
+    height: auto;
+  }
 }
 
 .join {
+  position: relative;
   display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin-top: 40px;
+  flex-direction: column;
+  align-items: center;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-.join input {
-  width: 180px;
+.join-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 260px;
+  max-width: 100%;
+  height: 52px;
+  padding: 0 6px 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.04),
+    0 8px 24px rgba(0, 0, 0, 0.06);
+  cursor: text;
+  transition:
+    width 0.6s var(--spring),
+    height 0.45s var(--spring),
+    background 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+
+.join-field:hover {
+  background: rgba(255, 255, 255, 0.45);
+}
+
+.join-field:focus-within,
+.join.has-value .join-field {
+  width: 360px;
+  height: 60px;
+  padding-left: 22px;
+  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(255, 255, 255, 0.9);
+  box-shadow:
+    inset 0 1px 0 #fff,
+    0 0 0 5px rgba(17, 18, 20, 0.07),
+    0 20px 44px rgba(0, 0, 0, 0.14);
+}
+
+.join-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.5s var(--spring), stroke 0.3s;
+}
+
+.join-field:focus-within .join-icon {
+  stroke: var(--text);
+  transform: rotate(-20deg) scale(1.12);
+}
+
+.join-field input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  font-size: 1rem;
+  outline: none;
+  transition: letter-spacing 0.3s ease;
+}
+
+.join-field input:focus-visible {
+  outline: none; /* the whole pill shows focus */
+}
+
+.join-field input::placeholder {
+  color: rgba(17, 18, 20, 0.45);
+  transition: opacity 0.25s, transform 0.35s var(--spring);
+}
+
+.join-field:focus-within input::placeholder {
+  opacity: 0.6;
+}
+
+/* A typed code looks like a code: spaced, monospaced, uppercase. */
+.join-field input.is-code {
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+}
+
+.join-go {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  height: 40px;
+  min-width: 40px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(17, 18, 20, 0.07);
+  color: var(--muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.3s ease,
+    color 0.3s ease,
+    height 0.45s var(--spring),
+    padding 0.45s var(--spring),
+    transform 0.15s ease;
+}
+
+.join-go svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: transform 0.4s var(--spring);
+}
+
+.join-go-label {
+  max-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  opacity: 0;
+  transition: max-width 0.5s var(--spring), opacity 0.25s ease, margin 0.5s var(--spring);
+}
+
+.join-go:disabled {
+  cursor: default;
+}
+
+.join-field:focus-within .join-go {
+  height: 46px;
+}
+
+.join.has-value .join-go {
+  padding: 0 16px 0 20px;
+  background: #111214;
+  color: #fff;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+.join.has-value .join-go-label {
+  max-width: 90px;
+  margin-right: 8px;
+  opacity: 1;
+}
+
+.join.has-value .join-go:hover svg {
+  transform: translateX(3px);
+}
+
+.join-go:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.join-hint {
+  position: absolute; /* outside the row's flow, so it never shifts the button */
+  top: calc(100% + 10px);
+  white-space: nowrap;
+  font-size: 0.85rem;
+  color: var(--muted);
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 0.3s ease, transform 0.45s var(--spring);
+}
+
+.join:focus-within .join-hint {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .join-field,
+  .join-icon,
+  .join-go,
+  .join-go-label,
+  .join-hint {
+    transition-duration: 0.01s;
+  }
+}
+
+@media (max-width: 520px) {
+  .hero.glass {
+    padding: 36px 20px;
+  }
 }
 
 /* ---------- controls ---------- */
 
 .btn {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   height: 44px;
   padding: 0 20px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
   background: var(--surface);
+  box-shadow: inset 0 1px 0 var(--highlight);
   color: var(--text);
   font: inherit;
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
 }
 
 .btn:hover:not(:disabled) {
-  border-color: var(--muted);
+  background: var(--surface-strong);
+  border-color: var(--line-strong);
+}
+
+.btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .btn:disabled {
-  opacity: 0.55;
+  opacity: 0.45;
   cursor: default;
 }
 
+.btn:focus-visible,
+input:focus-visible {
+  outline: 2px solid #111214;
+  outline-offset: 2px;
+}
+
 .btn-primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--accent-text);
+  border-color: #111214;
+  background: #111214;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .btn-primary:hover:not(:disabled) {
-  border-color: var(--accent);
-  filter: brightness(1.08);
+  background: #2a2c30;
+  border-color: #2a2c30;
 }
 
 .btn-danger {
   color: var(--danger);
 }
 
+.btn-danger:hover:not(:disabled) {
+  background: rgba(196, 38, 46, 0.1);
+  border-color: rgba(196, 38, 46, 0.35);
+}
+
 .btn-lg {
-  height: 52px;
-  padding: 0 28px;
+  height: 54px;
+  padding: 0 30px;
   font-size: 1.05rem;
 }
 
 input,
 select {
   height: 44px;
-  padding: 0 12px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  background: var(--surface);
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.06);
   color: var(--text);
   font: inherit;
+}
+
+input::placeholder {
+  color: rgba(17, 18, 20, 0.42);
 }
 
 /* ---------- session pages ---------- */
 
 .session {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 320px;
-  gap: 24px;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 20px;
   align-items: start;
 }
 
@@ -194,9 +729,16 @@ select {
 
 .stage {
   position: relative;
-  aspect-ratio: 16 / 9;
+  padding: 10px;
   border-radius: var(--radius);
-  background: var(--stage);
+}
+
+.stage-screen {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: calc(var(--radius) - 10px);
+  background: rgba(255, 255, 255, 0.25);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -207,10 +749,18 @@ select {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: var(--stage);
+  background: #000;
 }
 
 .stage:fullscreen {
+  padding: 0;
+  border-radius: 0;
+  background: #000;
+}
+
+.stage:fullscreen .stage-screen {
+  height: 100%;
+  aspect-ratio: auto;
   border-radius: 0;
 }
 
@@ -221,46 +771,51 @@ select {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
+  gap: 18px;
   padding: 24px;
-  color: #c7ccd6;
+  color: var(--muted);
   text-align: center;
 }
 
 .stage-toolbar {
   position: absolute;
-  right: 12px;
-  bottom: 12px;
+  right: 14px;
+  bottom: 14px;
   display: flex;
   gap: 8px;
 }
 
 .stage-toolbar .btn {
   height: 36px;
-  padding: 0 14px;
-  background: rgba(20, 23, 28, 0.75);
-  border-color: rgba(255, 255, 255, 0.15);
+  padding: 0 16px;
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(20, 20, 22, 0.5);
+  box-shadow: none;
   color: #fff;
-  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+
+.stage-toolbar .btn:hover:not(:disabled) {
+  background: rgba(20, 20, 22, 0.7);
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 20px;
-  border: 1px solid var(--border);
+  gap: 22px;
+  padding: 22px;
   border-radius: var(--radius);
-  background: var(--surface);
 }
 
 .panel h2 {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.1em;
   color: var(--muted);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .field {
@@ -272,7 +827,7 @@ select {
   flex: 1;
   min-width: 0;
   font-family: var(--font-geist-mono), monospace;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 
 .hint {
@@ -282,13 +837,15 @@ select {
 }
 
 .stat {
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: 600;
+  letter-spacing: -0.02em;
 }
 
 .stat small {
   font-size: 0.9rem;
   font-weight: 400;
+  letter-spacing: 0;
   color: var(--muted);
 }
 
@@ -296,7 +853,11 @@ select {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.85rem;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid var(--line);
+  font-size: 0.82rem;
   font-weight: 600;
 }
 
@@ -305,27 +866,35 @@ select {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: var(--muted);
+  background: rgba(17, 18, 20, 0.35);
 }
 
 .badge-live::before {
   background: var(--live);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--live) 25%, transparent);
+  box-shadow: 0 0 0 4px rgba(229, 36, 47, 0.2);
+  animation: pulse 1.6s ease-in-out infinite;
 }
 
 .badge-ok::before {
   background: var(--ok);
 }
 
+@keyframes pulse {
+  50% {
+    box-shadow: 0 0 0 7px rgba(229, 36, 47, 0.06);
+  }
+}
+
 .segmented {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 6px;
+  gap: 8px;
 }
 
 .segmented button {
   height: auto;
-  padding: 10px;
+  padding: 12px 10px;
+  border-radius: var(--radius-sm);
   flex-direction: column;
   gap: 2px;
   white-space: normal;
@@ -333,29 +902,30 @@ select {
 }
 
 .segmented button small {
-  font-size: 0.75rem;
+  font-size: 0.74rem;
   font-weight: 400;
   color: var(--muted);
 }
 
 .segmented button[aria-pressed="true"] {
-  border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px var(--accent);
+  background: rgba(255, 255, 255, 0.65);
+  border-color: #111214;
+  box-shadow: inset 0 0 0 1px #111214;
 }
 
 .alert {
-  padding: 14px 16px;
-  border: 1px solid color-mix(in srgb, var(--danger) 40%, var(--border));
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+  padding: 14px 18px;
+  border: 1px solid rgba(196, 38, 46, 0.3);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 235, 236, 0.6);
   font-size: 0.95rem;
 }
 
 .spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid rgba(255, 255, 255, 0.2);
-  border-top-color: #fff;
+  width: 30px;
+  height: 30px;
+  border: 3px solid rgba(0, 0, 0, 0.12);
+  border-top-color: #111214;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -370,4 +940,11 @@ select {
   padding: 64px 0;
   text-align: center;
   color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .badge-live::before,
+  .spinner {
+    animation-duration: 3s;
+  }
 }

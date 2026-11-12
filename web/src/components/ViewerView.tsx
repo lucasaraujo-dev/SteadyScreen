@@ -72,7 +72,7 @@ export default function ViewerView() {
 
   if (status === "error" && reason !== "negotiation-failed") {
     return (
-      <div className="hero">
+      <div className="hero glass">
         <p className="alert">{errorText(reason)}</p>
         <p style={{ marginTop: 24 }}>
           <Link className="btn" href="/">
@@ -87,26 +87,28 @@ export default function ViewerView() {
 
   return (
     <div className="session" style={{ gridTemplateColumns: "1fr" }}>
-      <div ref={stageRef} className="stage">
-        <video ref={videoRef} autoPlay muted playsInline hidden={!live} onDoubleClick={fullscreen} />
-        {!live && (
-          <div className="stage-empty">
-            {status === "error" ? <p>{errorText(reason)}</p> : <div className="spinner" aria-hidden />}
-            {status !== "error" && <p>{STATUS_TEXT[status]}</p>}
-          </div>
-        )}
-        {live && (
-          <div className="stage-toolbar">
-            {hasAudio && (
-              <button className="btn" onClick={toggleSound}>
-                {muted ? "Ativar som" : "Silenciar"}
+      <div ref={stageRef} className="stage glass">
+        <div className="stage-screen">
+          <video ref={videoRef} autoPlay muted playsInline hidden={!live} onDoubleClick={fullscreen} />
+          {!live && (
+            <div className="stage-empty">
+              {status === "error" ? <p>{errorText(reason)}</p> : <div className="spinner" aria-hidden />}
+              {status !== "error" && <p>{STATUS_TEXT[status]}</p>}
+            </div>
+          )}
+          {live && (
+            <div className="stage-toolbar">
+              {hasAudio && (
+                <button className="btn" onClick={toggleSound}>
+                  {muted ? "Ativar som" : "Silenciar"}
+                </button>
+              )}
+              <button className="btn" onClick={fullscreen}>
+                Tela cheia
               </button>
-            )}
-            <button className="btn" onClick={fullscreen}>
-              Tela cheia
-            </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
       <div>
         {live ? <span className="badge badge-live">Ao vivo</span> : <span className="badge">Sala {id}</span>}

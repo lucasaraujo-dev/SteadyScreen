@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import Link from "next/link";
+import { Geist, Geist_Mono, Unbounded } from "next/font/google";
+import InkBackground from "@/components/InkBackground";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,6 +13,12 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Display font for big headlines.
+const unbounded = Unbounded({
+  variable: "--font-display",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "SteadyScreen",
   description: "Compartilhe sua tela direto do navegador, sem instalar nada.",
@@ -20,14 +26,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable}`}>
+    <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable} ${unbounded.variable}`}>
       <body>
-        <header className="topbar">
-          <Link href="/" className="brand">
-            <span className="brand-dot" aria-hidden />
-            SteadyScreen
-          </Link>
-        </header>
+        <InkBackground />
+        {/* One sheet of liquid glass over the whole screen. */}
+        <div className="glass-screen" aria-hidden />
         <main className="main">{children}</main>
       </body>
     </html>
