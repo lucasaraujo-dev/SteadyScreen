@@ -7,12 +7,15 @@
 
 <h1 align="center">SteadyScreen</h1>
 
-<p align="center">Compartilhamento de tela de código aberto, direto do navegador.</p>
+<p align="center">Compartilhe sua tela com os amigos direto do navegador, sem instalar nada.</p>
 
-> **Fase 1 (atual):** quem compartilha usa só o navegador (`getDisplayMedia`) e o vídeo vai direto,
-> por WebRTC, para até 5 pessoas assistindo (P2P). O servidor só apresenta os navegadores um ao outro.
+Você cria uma sala, escolhe a tela e manda o link. Quem abrir já começa a assistir.
+Por enquanto dá para até 5 pessoas assistirem ao mesmo tempo.
 
 ## Como funciona
+
+O vídeo vai direto do seu navegador para o de quem está assistindo (WebRTC). O servidor só ajuda
+os navegadores a se encontrarem, ele não recebe o vídeo.
 
 ```
 Quem compartilha (navegador)            Servidor Go (server/)             Quem assiste (navegador)
@@ -22,19 +25,19 @@ Quem compartilha (navegador)            Servidor Go (server/)             Quem a
   RTCPeerConnection ════════════ vídeo e áudio direto (WebRTC P2P) ════════ <video>
 ```
 
-| Pasta | O que é |
+| Pasta | O que tem |
 |---|---|
-| `web/` | Site em Next.js + TypeScript: página inicial, `/compartilhar/[id]` e `/sala/[id]` |
-| `server/` | API em Go: cria salas, gera links e faz a sinalização WebRTC |
+| `web/` | O site, em Next.js + TypeScript |
+| `server/` | O servidor, em Go: cria as salas, os links e conecta as pessoas |
 
-A parte de transmissão fica isolada em `web/src/lib/host.ts` e `web/src/lib/viewer.ts`. Na próxima fase,
-ela é trocada por um servidor em Go que distribui o vídeo (SFU), e aí o limite de 5 pessoas deixa de existir.
+Toda a parte de transmissão fica em `web/src/lib/host.ts` e `web/src/lib/viewer.ts`. Mais pra frente
+ela vai passar por um servidor em Go que distribui o vídeo (SFU), e aí o limite de 5 pessoas acaba.
 
 ## Rodando no seu PC
 
-Pré-requisitos: [Node.js](https://nodejs.org) 20+ e [Go](https://go.dev/dl) 1.23+.
+Você vai precisar do [Node.js](https://nodejs.org) 20+ e do [Go](https://go.dev/dl) 1.23+.
 
-**1. Servidor** (em um terminal):
+**1. Servidor** (num terminal):
 
 ```bash
 cd server
@@ -52,31 +55,31 @@ npm run dev
 
 Abra http://localhost:3000, clique em **Crie sua sala**, depois em **Escolher tela**, e abra o link da sala em outra aba.
 
-### Assistir de outro computador da mesma rede
+### Assistindo de outro PC na mesma rede
 
-Na página de compartilhar, troque `localhost` pelo IP do seu PC (ex.: `http://192.168.0.10:3000/sala/abc123`).
-Quem compartilha precisa estar em `localhost` ou em HTTPS, porque o navegador só permite capturar a tela
-nesses casos. Quem assiste pode usar o IP normalmente. Se o Windows perguntar, libere as portas 3000 e 8080 no firewall.
+Troque `localhost` pelo IP do seu PC no link da sala (tipo `http://192.168.0.10:3000/sala/abc123`).
+Quem compartilha tem que estar em `localhost` ou em HTTPS, porque só assim o navegador deixa capturar
+a tela. Quem assiste pode usar o IP de boa. Se o Windows perguntar, libera as portas 3000 e 8080 no firewall.
 
-## Configuração do servidor
+## Configurando o servidor
 
 | Variável | Padrão | Para que serve |
 |---|---|---|
 | `ADDR` | `:8080` | Endereço e porta |
-| `MAX_VIEWERS` | `5` | Espectadores por sala |
-| `ALLOWED_ORIGINS` | *(vazio = qualquer)* | Sites que podem usar a API, separados por vírgula. Defina em produção. |
+| `MAX_VIEWERS` | `5` | Quantas pessoas podem assistir por sala |
+| `ALLOWED_ORIGINS` | *(vazio = qualquer um)* | Sites que podem usar a API, separados por vírgula. Em produção, preencha. |
 | `STUN_URLS` | `stun:stun.l.google.com:19302` | Servidores STUN |
-| `TURN_URLS`, `TURN_USERNAME`, `TURN_CREDENTIAL` | *(vazio)* | Servidor TURN (coturn), necessário na VPS |
+| `TURN_URLS`, `TURN_USERNAME`, `TURN_CREDENTIAL` | *(vazio)* | Servidor TURN (coturn), precisa na VPS |
 
-No site, `NEXT_PUBLIC_SERVER_URL` aponta para o servidor (padrão: mesmo host, porta 8080).
+No site, `NEXT_PUBLIC_SERVER_URL` diz onde está o servidor (se não colocar nada, usa o mesmo endereço na porta 8080).
 
-## Roteiro
+## Próximos passos
 
-- [x] **Fase 1:** compartilhar pelo navegador, P2P, até 5 espectadores, localhost
-- [ ] Subir na VPS: domínio, HTTPS, TURN (coturn)
-- [ ] **Fase 2:** SFU em Go (Pion), sem limite de 5; Sunshine + NVENC/AMF no PC de quem compartilha; fallback com WebCodecs
-- [ ] **Fase 3:** app nativo com motor de captura próprio, controle remoto de mouse e teclado, instalador assinado
+- [x] Compartilhar pelo navegador, até 5 pessoas, rodando no PC
+- [ ] Colocar no ar numa VPS, com domínio, HTTPS e TURN (coturn)
+- [ ] Servidor de vídeo em Go (Pion) para tirar o limite de 5; captura com Sunshine + NVENC/AMF no PC de quem compartilha
+- [ ] App para PC com captura própria, controle remoto de mouse e teclado e instalador
 
 ## Licença
 
-[GPL-3.0](LICENSE).
+[GPL-3.0](LICENSE)
