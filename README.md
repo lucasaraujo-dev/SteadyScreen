@@ -7,7 +7,7 @@
 
 <h1 align="center">SteadyScreen</h1>
 
-<p align="center">Compartilhe sua tela com os amigos direto do navegador, sem instalar nada.</p>
+<p align="center">Compartilhe sua tela direto do navegador.</p>
 
 Você cria uma sala, escolhe a tela e manda o link. Quem abrir já começa a assistir.
 Por enquanto dá para até 5 pessoas assistirem ao mesmo tempo.
