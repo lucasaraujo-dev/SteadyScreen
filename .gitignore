@@ -1,0 +1,9 @@
+# Go
+server/server
+server/*.exe
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
