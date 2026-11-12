@@ -11,6 +11,7 @@ import {
   ExpandIcon,
   EyeIcon,
   EyeOffIcon,
+  GridIcon,
   PipIcon,
   ShrinkIcon,
 } from "@/components/icons";
@@ -21,6 +22,9 @@ type Props = {
   /** Host only: hide our own preview while still sharing. */
   previewHidden?: boolean;
   onTogglePreview?: () => void;
+  /** Show every screen side by side. */
+  grid?: boolean;
+  onToggleGrid?: () => void;
   /** Extra buttons placed first (e.g. the viewer's sound toggle). */
   children?: ReactNode;
 };
@@ -31,6 +35,8 @@ export default function StageToolbar({
   videoRef,
   previewHidden,
   onTogglePreview,
+  grid,
+  onToggleGrid,
   children,
 }: Props) {
   const fullscreen = useSyncExternalStore(
@@ -72,6 +78,15 @@ export default function StageToolbar({
 
   return (
     <div className="stage-toolbar">
+      {onToggleGrid && (
+        <ToolButton
+          label={grid ? "Sair da grade" : "Ver todas as telas"}
+          onClick={onToggleGrid}
+          active={grid}
+        >
+          <GridIcon size={18} />
+        </ToolButton>
+      )}
       {children}
       {onTogglePreview && (
         <ToolButton

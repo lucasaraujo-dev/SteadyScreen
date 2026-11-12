@@ -22,6 +22,8 @@ type Props = {
   micOptions?: ReactNode;
   /** Contents of the headset's options menu. */
   headsetOptions?: ReactNode;
+  /** Contents of the camera's options menu. */
+  cameraOptions?: ReactNode;
   /** Contents of the share button's options menu. */
   screenOptions?: ReactNode;
   onToggleMic: () => void;
@@ -65,6 +67,7 @@ export default function CallBar(p: Props) {
         state={p.cameraOn ? "active" : "on"}
         onClick={p.onToggleCamera}
         optionsLabel="Opções da câmera"
+        options={p.cameraOptions}
       >
         <CameraIcon size={20} />
       </CallButton>

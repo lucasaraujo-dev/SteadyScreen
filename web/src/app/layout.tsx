@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Unbounded } from "next/font/google";
+import { Geist, Geist_Mono, Inter, Unbounded } from "next/font/google";
 import "./globals.css";
 import "./room.css";
 
@@ -19,6 +19,13 @@ const unbounded = Unbounded({
   subsets: ["latin"],
 });
 
+// iOS-like UI font: Apple devices use their own SF Pro, everyone else gets Inter
+// (the closest free match; SF Pro itself can't be shipped on a website).
+const inter = Inter({
+  variable: "--font-ios",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: "SteadyScreen",
   description: "Compartilhe sua tela direto do navegador, sem instalar nada.",
@@ -26,7 +33,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`${geistSans.variable} ${geistMono.variable} ${unbounded.variable}`}>
+    <html
+      lang="pt-BR"
+      className={`${geistSans.variable} ${geistMono.variable} ${unbounded.variable} ${inter.variable}`}
+    >
       {/* Each page brings its own full-screen background (see Screen.tsx). */}
       <body>{children}</body>
     </html>

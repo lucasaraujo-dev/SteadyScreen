@@ -28,6 +28,15 @@ export const ScreenIcon = (p: P) => (
   </Svg>
 );
 
+export const GridIcon = (p: P) => (
+  <Svg {...p}>
+    <rect x="3.5" y="3.5" width="7" height="7" rx="1.8" />
+    <rect x="13.5" y="3.5" width="7" height="7" rx="1.8" />
+    <rect x="3.5" y="13.5" width="7" height="7" rx="1.8" />
+    <rect x="13.5" y="13.5" width="7" height="7" rx="1.8" />
+  </Svg>
+);
+
 export const CameraIcon = (p: P) => (
   <Svg {...p}>
     <rect x="2.5" y="6" width="13" height="12" rx="2.5" />

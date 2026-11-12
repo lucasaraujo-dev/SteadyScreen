@@ -22,6 +22,19 @@ import Settings from "@/components/room/Settings";
 import CallBar from "@/components/room/CallBar";
 import HeadsetMenu from "@/components/room/HeadsetMenu";
 import MicMenu from "@/components/room/MicMenu";
+import Toast from "@/components/room/Toast";
+import StreamGrid, {
+  DEFAULT_SOUND,
+  label as tileLabel,
+  SoundControl,
+  StreamVideo,
+  type GridTile,
+  type TileSound,
+} from "@/components/room/StreamGrid";
+import CameraMenu, {
+  loadCameraId,
+  saveCameraId,
+} from "@/components/room/CameraMenu";
 import ScreenMenu, { type Surface } from "@/components/room/ScreenMenu";
 import StageToolbar from "@/components/room/StageToolbar";
 import StreamMenu from "@/components/room/StreamMenu";
@@ -78,6 +91,16 @@ export default function HostView() {
   const [deafened, setDeafened] = useState(false);
   const [micSettings, setMicSettings] = useState<MicSettings>(loadMicSettings);
   const [pttHeld, setPttHeld] = useState(false);
+  // Grid of every screen, or one screen big ("focus": someone else's tile id, null = ours).
+  const [grid, setGrid] = useState(false);
+  const [focus, setFocus] = useState<string | null>(null);
+  // In the grid, the screen shown big on top (null = all tiles equal).
+  const [spotlight, setSpotlight] = useState<string | null>(null);
+  // Volume / mute of each other person's screen, by tile id.
+  const [sounds, setSounds] = useState<Record<string, TileSound>>({});
+  const changeSound = (id: string, sound: TileSound) =>
+    setSounds((all) => ({ ...all, [id]: sound }));
+  const [cameraId, setCameraId] = useState<string>(loadCameraId);
   const [systemAudio, setSystemAudio] = useState<boolean>(loadSystemAudio);
   const [audioSettings, setAudioSettings] =
     useState<AudioSettings>(loadAudioSettings);
@@ -227,7 +250,7 @@ export default function HostView() {
     }
   }
 
-  async function shareCamera() {
+  async function shareCamera(deviceId = cameraId) {
     if (!navigator.mediaDevices?.getUserMedia) {
       setNotice(errorText("unsupported"));
       return;
@@ -238,19 +261,18 @@ export default function HostView() {
           width: { ideal: 1280 },
           height: { ideal: 720 },
           frameRate: { ideal: output.fps },
+          ...(deviceId ? { deviceId: { exact: deviceId } } : {}),
         },
         audio: false, // voice comes from the mic button
       });
       publish(media, "camera");
     } catch (err) {
       const name = (err as DOMException).name;
-      setNotice(
-        errorText(
-          name === "NotFoundError" || name === "OverconstrainedError"
-            ? "camera-missing"
-            : "camera-denied",
-        ),
-      );
+      const missing =
+        name === "NotFoundError" || name === "OverconstrainedError";
+      // The chosen webcam was unplugged: fall back to the default one.
+      if (missing && deviceId) return shareCamera("");
+      setNotice(errorText(missing ? "camera-missing" : "camera-denied"));
     }
   }
 
@@ -301,6 +323,15 @@ export default function HostView() {
     micObjRef.current?.stop();
     micObjRef.current = null;
     micRef.current = null;
+  }
+
+  const clearNotice = useCallback(() => setNotice(null), []);
+
+  function changeCamera(id: string) {
+    setCameraId(id);
+    saveCameraId(id);
+    // Already on camera: switch to the new webcam right away.
+    if (source === "camera") void shareCamera(id);
   }
 
   function changeSystemAudio(on: boolean) {
@@ -375,6 +406,27 @@ export default function HostView() {
     );
   }
 
+  // Other people's screens. Empty until guests can share too; the grid,
+  // spotlight and per-screen volume already work for them.
+  const others: GridTile[] = [];
+  // Only worth a grid when more than one screen is being shared.
+  const canGrid = !!stream && others.length > 0;
+  const showGrid = grid && canGrid;
+  const focused = stream ? others.find((d) => d.id === focus) : undefined;
+  const tiles: GridTile[] = stream
+    ? [
+        {
+          id: "self",
+          name: room.selfName || "você",
+          kind: source === "camera" ? "camera" : "screen",
+          stream,
+          self: true,
+        },
+        ...others,
+      ]
+    : [];
+  const stageAspect = showGrid ? null : focused ? 16 / 9 : aspect;
+
   const isLocalhost =
     link.includes("//localhost") || link.includes("//127.0.0.1");
 
@@ -396,8 +448,8 @@ export default function HostView() {
           <div className="stage-area">
             <div
               ref={stageRef}
-              className={`stage glass${aspect ? " is-fit" : ""}`}
-              style={stageStyle(aspect)}
+              className={`stage glass${stageAspect ? " is-fit" : ""}${showGrid ? " is-grid" : ""}`}
+              style={stageStyle(stageAspect)}
             >
               <div className="stage-screen">
                 <video
@@ -405,7 +457,7 @@ export default function HostView() {
                   autoPlay
                   muted
                   playsInline
-                  hidden={!stream || previewHidden}
+                  hidden={!stream || previewHidden || showGrid || !!focused}
                   className={source === "camera" ? "is-mirrored" : undefined}
                 />
                 {!stream && !inCall && (
@@ -434,7 +486,7 @@ export default function HostView() {
                       </button>
                       <button
                         className="share-btn is-secondary"
-                        onClick={shareCamera}
+                        onClick={() => void shareCamera()}
                         disabled={!ready}
                       >
                         <CameraIcon size={22} />
@@ -444,14 +496,53 @@ export default function HostView() {
                     {!ready && <p className="hint">Conectando ao servidor…</p>}
                   </div>
                 )}
-                {stream && (
+                {focused && !showGrid && (
+                  <div className="stage-focus">
+                    <StreamVideo
+                      stream={focused.stream}
+                      mirrored={focused.kind === "camera"}
+                      sound={sounds[focused.id] ?? DEFAULT_SOUND}
+                      outputId={audioSettings.outputId}
+                    />
+                    <SoundControl
+                      name={focused.name}
+                      sound={sounds[focused.id] ?? DEFAULT_SOUND}
+                      onChange={(s) => changeSound(focused.id, s)}
+                    />
+                  </div>
+                )}
+                {showGrid && (
+                  <StreamGrid
+                    tiles={tiles}
+                    mainId={spotlight}
+                    sounds={sounds}
+                    onSound={changeSound}
+                    outputId={audioSettings.outputId}
+                    onPick={(id) => {
+                      // 1st click: big on top. 2nd click: that screen alone.
+                      if (id !== spotlight) return setSpotlight(id);
+                      setFocus(id === "self" ? null : id);
+                      setGrid(false);
+                    }}
+                  />
+                )}
+                {stream && !showGrid && (
                   <span className="badge stage-badge">
-                    <LiveIcon kind={source} />
-                    {source === "camera" ? "Câmera" : "Tela"} de{" "}
-                    {room.selfName || "você"}
+                    {focused ? (
+                      <>
+                        <LiveIcon kind={focused.kind} />
+                        {tileLabel(focused)}
+                      </>
+                    ) : (
+                      <>
+                        <LiveIcon kind={source} />
+                        {source === "camera" ? "Câmera" : "Tela"} de{" "}
+                        {room.selfName || "você"}
+                      </>
+                    )}
                   </span>
                 )}
-                {stream && previewHidden && (
+                {stream && previewHidden && !showGrid && !focused && (
                   <div className="stage-empty stage-hidden">
                     <EyeOffIcon size={28} />
                     <p>
@@ -474,6 +565,15 @@ export default function HostView() {
                   videoRef={previewRef}
                   previewHidden={previewHidden}
                   onTogglePreview={() => setPreviewHidden((h) => !h)}
+                  grid={showGrid}
+                  onToggleGrid={
+                    canGrid
+                      ? () => {
+                          setSpotlight(null);
+                          setGrid((g) => !g);
+                        }
+                      : undefined
+                  }
                 >
                   <StreamMenu
                     output={output}
@@ -502,6 +602,9 @@ export default function HostView() {
                           : undefined
                       }
                     />
+                  }
+                  cameraOptions={
+                    <CameraMenu cameraId={cameraId} onChange={changeCamera} />
                   }
                   screenOptions={
                     <ScreenMenu
@@ -536,8 +639,9 @@ export default function HostView() {
             </div>
           </div>
 
-          {(notice || error) && (
-            <p className="alert">{notice ?? errorText(error!)}</p>
+          {error && <p className="alert">{errorText(error)}</p>}
+          {notice && (
+            <Toast key={notice} message={notice} onDone={clearNotice} />
           )}
 
           <InviteLink link={link} />
