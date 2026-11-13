@@ -1284,10 +1284,41 @@ dialog.settings::backdrop {
   color: var(--muted);
 }
 
-.settings-actions {
+/* "Formato do vídeo": the codec each viewer gets and who encodes it. */
+.format-list {
   display: flex;
-  justify-content: flex-end;
+  flex-wrap: wrap;
   gap: 8px;
+  list-style: none;
+}
+
+.format-list li {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 0.9rem;
+}
+
+.format-list em {
+  font-style: normal;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.format-list em.is-card {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+.format-note {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--muted);
 }
 
 /* ---------- smaller screens: stack, center first ---------- */

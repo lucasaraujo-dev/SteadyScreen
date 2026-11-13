@@ -2,6 +2,7 @@
 // keeps one RTCPeerConnection per viewer. Phase 2 swaps this for a Go SFU
 // (one upload, server fans out) without changing the pages.
 
+import { preferVideoFormats, videoFormatOf, type VideoFormat } from "./codecs";
 import { handleRoomMessage, type RoomEvents, type Sharing } from "./room";
 import { Signaling, type SignalMessage } from "./signaling";
 
@@ -102,6 +103,19 @@ export class HostSession {
     );
   }
 
+  /** The video formats in use right now (one per viewer, duplicates merged). */
+  async videoFormats(): Promise<VideoFormat[]> {
+    const live = [...this.peers.values()].filter(
+      (p) => p.pc.connectionState === "connected",
+    );
+    const found = await Promise.all(
+      live.map((p) => videoFormatOf(p.pc).catch(() => null)),
+    );
+    const seen = new Map<string, VideoFormat>();
+    for (const f of found) if (f) seen.set(`${f.name}|${f.onCard}`, f);
+    return [...seen.values()];
+  }
+
   sendChat(text: string) {
     this.signaling.send("chat", undefined, { text });
   }
@@ -178,6 +192,9 @@ export class HostSession {
     };
 
     try {
+      // AV1 / HEVC / H.264 on the graphics card first, when it has them.
+      await preferVideoFormats(pc);
+      if (this.peers.get(id) !== peer) return;
       await this.applyQuality(pc);
       const offer = await pc.createOffer();
       await pc.setLocalDescription(offer);

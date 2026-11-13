@@ -384,6 +384,12 @@ export default function HostView() {
     void sessionRef.current?.setQuality(q);
   }
 
+  // For the settings panel: which video format each viewer gets.
+  const getFormats = useCallback(
+    async () => (await sessionRef.current?.videoFormats()) ?? [],
+    [],
+  );
+
   const problem = error;
   if (
     problem === "bad-token" ||
@@ -673,6 +679,7 @@ export default function HostView() {
       <Settings
         open={room.settingsOpen}
         onClose={room.closeSettings}
+        getFormats={getFormats}
         quality={quality}
         onQuality={changeQuality}
       />
