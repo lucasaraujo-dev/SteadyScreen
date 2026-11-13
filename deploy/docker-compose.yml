@@ -23,14 +23,30 @@ services:
     environment:
       ALLOWED_ORIGINS: https://${DOMAIN}
       MAX_VIEWERS: ${MAX_VIEWERS:-5}
-      TURN_URLS: ${TURN_URLS:-}
-      TURN_USERNAME: ${TURN_USERNAME:-}
-      TURN_CREDENTIAL: ${TURN_CREDENTIAL:-}
-      # Ready for when accounts and chat history are saved.
+      # Our TURN relay (the turn service below); browsers get a password
+      # that expires, made from TURN_SECRET.
+      TURN_URLS: ${TURN_URLS:-turn:${DOMAIN}:3478?transport=udp,turn:${DOMAIN}:3478?transport=tcp}
+      TURN_SECRET: ${TURN_SECRET:?set TURN_SECRET in .env}
       DATABASE_URL: postgres://${POSTGRES_USER:-steadyscreen}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-steadyscreen}?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
+
+  # TURN relay: carries the video when two browsers can't connect directly
+  # (most home routers and phone networks). Uses the VPS's own network so
+  # the relay ports work as they are; open them in the firewall:
+  #   3478 tcp+udp, 49160-49400 udp
+  turn:
+    image: coturn/coturn:4.6
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
+    command:
+      - -c
+      - /etc/coturn/turnserver.conf
+      - --static-auth-secret=${TURN_SECRET:?set TURN_SECRET in .env}
+      - --external-ip=${PUBLIC_IP:?set PUBLIC_IP in .env}
 
   # Database for accounts, chats and the like. Only reachable inside Docker
   # (no port open to the internet); data lives in the postgres_data volume.

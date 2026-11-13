@@ -31,7 +31,7 @@ func main() {
 	})
 	mux.HandleFunc("GET /api/config", func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]any{
-			"iceServers": cfg.ICEServers,
+			"iceServers": cfg.iceServers(),
 			"maxViewers": cfg.MaxViewers,
 		})
 	})

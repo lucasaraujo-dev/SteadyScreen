@@ -1,18 +1,26 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha1"
+	"encoding/base64"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Config holds the server settings, read from environment variables.
 type Config struct {
-	Addr           string   // ADDR, default ":8080"
-	MaxViewers     int      // MAX_VIEWERS, default 5 (P2P mesh limit)
-	AllowedOrigins []string // ALLOWED_ORIGINS, comma separated; empty = allow any (dev only)
-	ICEServers     []ICEServer
-	DatabaseURL    string // DATABASE_URL, Postgres connection string (required)
+	Addr           string      // ADDR, default ":8080"
+	MaxViewers     int         // MAX_VIEWERS, default 5 (P2P mesh limit)
+	AllowedOrigins []string    // ALLOWED_ORIGINS, comma separated; empty = allow any (dev only)
+	ICEServers     []ICEServer // STUN, plus TURN with fixed credentials
+	DatabaseURL    string      // DATABASE_URL, Postgres connection string (required)
+
+	// TURN relay with short-lived credentials (coturn's use-auth-secret).
+	TurnURLs   []string // TURN_URLS
+	TurnSecret string   // TURN_SECRET, shared with coturn's static-auth-secret
 }
 
 // ICEServer mirrors the browser's RTCIceServer dictionary.
@@ -37,15 +45,37 @@ func loadConfig() Config {
 	if len(stun) > 0 {
 		cfg.ICEServers = append(cfg.ICEServers, ICEServer{URLs: stun})
 	}
-	// TURN is optional in phase 1; it becomes required once deployed on the VPS.
-	if turn := splitList(os.Getenv("TURN_URLS")); len(turn) > 0 {
+	// TURN relays the video when two browsers can't reach each other directly
+	// (most home routers and mobile networks). With TURN_SECRET each visitor
+	// gets credentials that expire; otherwise TURN_USERNAME/TURN_CREDENTIAL.
+	cfg.TurnURLs = splitList(os.Getenv("TURN_URLS"))
+	cfg.TurnSecret = os.Getenv("TURN_SECRET")
+	if len(cfg.TurnURLs) > 0 && cfg.TurnSecret == "" {
 		cfg.ICEServers = append(cfg.ICEServers, ICEServer{
-			URLs:       turn,
+			URLs:       cfg.TurnURLs,
 			Username:   os.Getenv("TURN_USERNAME"),
 			Credential: os.Getenv("TURN_CREDENTIAL"),
 		})
 	}
 	return cfg
+}
+
+// iceServers is what a browser gets from /api/config: STUN and, with a
+// TURN secret, fresh TURN credentials valid for a day (TURN REST API:
+// username = expiry time, password = HMAC-SHA1 of it with the secret).
+func (c Config) iceServers() []ICEServer {
+	list := append([]ICEServer(nil), c.ICEServers...)
+	if len(c.TurnURLs) > 0 && c.TurnSecret != "" {
+		user := strconv.FormatInt(time.Now().Add(24*time.Hour).Unix(), 10) + ":steadyscreen"
+		mac := hmac.New(sha1.New, []byte(c.TurnSecret))
+		mac.Write([]byte(user))
+		list = append(list, ICEServer{
+			URLs:       c.TurnURLs,
+			Username:   user,
+			Credential: base64.StdEncoding.EncodeToString(mac.Sum(nil)),
+		})
+	}
+	return list
 }
 
 func (c Config) originAllowed(origin string) bool {
