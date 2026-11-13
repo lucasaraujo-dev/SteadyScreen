@@ -11,3 +11,6 @@ server/*.exe~
 
 # Deploy secrets
 deploy/.env
+
+# Local Claude Code settings (paths on this PC)
+.claude/
