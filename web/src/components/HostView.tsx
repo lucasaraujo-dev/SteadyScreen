@@ -39,6 +39,7 @@ import ScreenMenu, { type Surface } from "@/components/room/ScreenMenu";
 import StageToolbar from "@/components/room/StageToolbar";
 import StreamMenu from "@/components/room/StreamMenu";
 import LiveIcon from "@/components/room/LiveIcon";
+import RoomNav from "@/components/room/RoomNav";
 import { useRoom } from "@/components/room/useRoom";
 import { stageStyle, useVideoAspect } from "@/components/room/useVideoAspect";
 import { getConfig, loadHostToken } from "@/lib/api";
@@ -432,8 +433,14 @@ export default function HostView() {
 
   return (
     <div className="room">
-      {/* Navbar: intentionally empty for now. */}
-      <header className="room-nav glass" />
+      <RoomNav
+        roomId={id}
+        participants={room.participants}
+        notices={room.notices}
+        unread={room.unreadNotices}
+        onOpenNotices={room.markNoticesSeen}
+        onOpenSettings={room.openSettings}
+      />
 
       <div className="room-body">
         <Participants
@@ -658,7 +665,6 @@ export default function HostView() {
           selfId={room.selfId}
           disabled={!ready}
           onSend={(t) => sessionRef.current?.sendChat(t)}
-          onOpenSettings={room.openSettings}
         />
       </div>
 

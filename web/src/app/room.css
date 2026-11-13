@@ -14,10 +14,254 @@
 
 /* Navbar: empty for now. */
 .room-nav {
+  position: relative;
+  z-index: 20; /* the bell's panel opens over the room */
   flex-shrink: 0;
-  height: 56px;
-  margin: 12px 12px 0;
-  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  /* A floating pill in the middle, like the participants island. */
+  width: min(760px, calc(100% - 24px));
+  height: 54px;
+  margin: 12px auto 0;
+  padding: 0 7px 0 22px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(18, 19, 23, 0.72);
+  backdrop-filter: blur(20px) saturate(160%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 12px 32px rgba(0, 0, 0, 0.35);
+}
+
+.nav-room {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.nav-home {
+  flex-shrink: 0;
+  margin-left: -14px; /* sits close to the pill's rounded end */
+  width: 38px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-home:hover {
+  transform: translateY(-1px) scale(1.06);
+}
+
+.nav-name {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav-code {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.78rem;
+  cursor: pointer;
+  user-select: none;
+  transition:
+    color 0.2s,
+    background 0.2s,
+    border-color 0.2s,
+    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-code:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nav-code.is-copied {
+  border-color: rgba(47, 210, 122, 0.6);
+  background: rgba(47, 210, 122, 0.12);
+  color: #2fd27a;
+  transform: scale(1.05);
+}
+
+.nav-tag {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 8px;
+  border-radius: 999px;
+  background: rgba(59, 130, 246, 0.14);
+  color: #8fb6ff;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.nav-actions .icon-btn {
+  width: 38px;
+  height: 38px;
+}
+
+.nav-gear:hover {
+  transform: rotate(45deg);
+}
+
+.nav-bell {
+  position: relative;
+}
+
+.nav-bell .icon-btn {
+  position: relative;
+}
+
+.nav-bell.is-open .icon-btn {
+  background: #fff;
+  color: #0d0e11;
+}
+
+.nav-bell .icon-btn > span:first-child {
+  display: grid;
+  transform-origin: 50% 10%;
+}
+
+.bell-ring {
+  animation: bell-ring 0.9s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes bell-ring {
+  15% {
+    transform: rotate(16deg);
+  }
+  35% {
+    transform: rotate(-13deg);
+  }
+  55% {
+    transform: rotate(8deg);
+  }
+  75% {
+    transform: rotate(-4deg);
+  }
+}
+
+.nav-badge {
+  position: absolute;
+  top: 3px;
+  right: 2px;
+  display: grid;
+  place-items: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border: 2px solid #121317;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1;
+  animation: menu-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-panel {
+  position: absolute;
+  top: calc(100% + 14px);
+  right: -44px;
+  width: 320px;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  background: rgba(18, 19, 23, 0.96);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  transform-origin: top right;
+  animation: menu-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.nav-empty {
+  margin: 4px 2px 2px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.nav-list {
+  display: grid;
+  gap: 2px;
+  max-height: 320px;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  scrollbar-width: none;
+}
+
+.nav-list::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-notice {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 8px;
+  border-radius: 10px;
+  font-size: 0.86rem;
+}
+
+.nav-notice:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.nav-dot {
+  flex-shrink: 0;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #2fd27a;
+}
+
+.nav-notice.is-leave .nav-dot {
+  background: #6b7280;
+}
+
+.nav-notice.is-live .nav-dot {
+  background: #3b82f6;
+}
+
+.nav-notice-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.nav-notice time {
+  flex-shrink: 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+@media (max-width: 640px) {
+  .nav-tag {
+    display: none;
+  }
 }
 
 .room-body {
@@ -91,10 +335,6 @@
 .icon-btn:hover {
   background: var(--surface-strong);
   color: var(--text);
-}
-
-.side-head .icon-btn:hover {
-  transform: rotate(45deg); /* the gear turns a little */
 }
 
 .icon-btn:focus-visible {
@@ -349,12 +589,212 @@
 
 /* ---------- chat ---------- */
 
+.room-side.chat {
+  position: relative;
+}
+
+/* The chat box and its "Chat" tab share one solid color and border, so the
+   tab looks like part of the box (concave corners where they meet). */
+.chat-wrap {
+  --chat-bg: #121315;
+  --chat-line: #25262a;
+  --tab-w: 92px;
+  --tab-h: 36px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.chat-wrap .room-side.chat {
+  flex: 1;
+  background: var(--chat-bg);
+  border-color: var(--chat-line);
+  /* No inner top highlight: it would draw a line under the tab. */
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+  overflow: visible; /* the message list reaches up into the tab */
+}
+
+/* Only the box + tab shape shows messages: a rectangle for the tab on top
+   of the box area. */
+.chat-wrap .chat-list {
+  /* Inside the tab's borders only (1px in on each side), so messages never
+     pass over the border lines. */
+  /* Tab part: the inside of the tab with its rounded top corners (92×36
+     tab, 1px border, 14px radius → 90×37 with 13px corners). */
+  mask-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='90' height='37'%3E%3Cpath d='M13 0H77A13 13 0 0 1 90 13V37H0V13A13 13 0 0 1 13 0Z'/%3E%3C/svg%3E"),
+    linear-gradient(#000, #000);
+  mask-size:
+    calc(var(--tab-w) - 2px) calc(var(--tab-h) + 1px),
+    100% calc(100% - var(--tab-h));
+  mask-position:
+    center 1px,
+    0 var(--tab-h);
+  mask-repeat: no-repeat;
+}
+
+.chat-title {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  height: var(--tab-h);
+  margin: 0;
+  font-size: 0.86rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.chat-tab {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  width: var(--tab-w);
+  height: var(--tab-h);
+  margin-bottom: -1px; /* overlaps the box's top border, hiding it */
+  border: 1px solid var(--chat-line);
+  border-bottom: 0;
+  border-radius: 14px 14px 0 0;
+  background: var(--chat-bg);
+}
+
+/* Concave corners joining the tab to the box on each side. */
+.chat-tab::before,
+.chat-tab::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  /* 1px wider than the curve: it also covers the tab's own side border
+     there, so the side line flows into the curve without a seam. */
+  width: 15px;
+  height: 15px;
+}
+
+.chat-tab::before {
+  left: -15px;
+  background: radial-gradient(
+    circle at 0 0,
+    transparent 14px,
+    var(--chat-line) 14px,
+    var(--chat-line) 15px,
+    var(--chat-bg) 15.5px
+  );
+}
+
+.chat-tab::after {
+  right: -15px;
+  background: radial-gradient(
+    circle at 100% 0,
+    transparent 14px,
+    var(--chat-line) 14px,
+    var(--chat-line) 15px,
+    var(--chat-bg) 15.5px
+  );
+}
+
+/* Messages fade and blur as they scroll up to the top edge (progressive
+   blur: growing layers that each fade out, so there is no visible line). */
+.chat-fade {
+  position: absolute;
+  inset: calc(var(--tab-h) * -1) 0 auto;
+  z-index: 3;
+  height: calc(var(--tab-h) + 52px);
+  pointer-events: none;
+}
+
+/* Two blur layers, each kept 1px inside the borders: a backdrop blur
+   smears whatever is under its edges, so the borders must stay outside. */
+.fade-tab,
+.fade-box {
+  position: absolute;
+  pointer-events: none;
+}
+
+/* Behind the "Chat" title: fully blurred and tinted. */
+.fade-tab {
+  top: 1px;
+  left: calc(50% - var(--tab-w) / 2 + 1px);
+  width: calc(var(--tab-w) - 2px);
+  height: var(--tab-h);
+  border-radius: 13px 13px 0 0;
+  background: rgba(18, 19, 21, 0.72);
+}
+
+.fade-tab::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  backdrop-filter: blur(10px);
+}
+
+/* Top of the box: the same blur, fading away downwards. */
+.fade-box {
+  top: var(--tab-h);
+  left: 0;
+  right: 0;
+  height: 52px;
+  border-radius: 19px 19px 0 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(18, 19, 21, 0.72) 0%,
+    rgba(18, 19, 21, 0.3) 50%,
+    rgba(18, 19, 21, 0) 100%
+  );
+}
+
+.fade-box::before,
+.fade-box::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+
+.fade-box::before {
+  backdrop-filter: blur(4px);
+  mask-image:
+    linear-gradient(to bottom, #000 0%, #000 30%, transparent 100%),
+    linear-gradient(
+      to right,
+      transparent,
+      #000 6px,
+      #000 calc(100% - 6px),
+      transparent
+    );
+  mask-composite: intersect;
+}
+
+.fade-box::after {
+  backdrop-filter: blur(10px);
+  mask-image:
+    linear-gradient(to bottom, #000 0%, transparent 60%),
+    linear-gradient(
+      to right,
+      transparent,
+      #000 6px,
+      #000 calc(100% - 6px),
+      transparent
+    );
+  mask-composite: intersect;
+}
+
 .chat-list {
+  position: relative;
+  z-index: 2;
   flex: 1;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  padding: 4px 14px 12px;
+  /* Reaches up into the tab, so messages scroll behind the title. */
+  margin-top: calc(var(--tab-h, 0px) * -1);
+  padding: calc(var(--tab-h, 0px) + 18px) 14px 12px;
+  scrollbar-width: none;
   list-style: none;
 }
 
@@ -400,42 +840,126 @@
   color: #08090b;
 }
 
+/* Message field: a pill that springs open like the invite link. */
 .chat-form {
-  display: flex;
-  gap: 8px;
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   flex-shrink: 0;
-  padding: 12px;
+  display: grid;
+  place-items: center;
+  height: 76px;
+  padding: 0 12px;
   border-top: 1px solid var(--line);
 }
 
-.chat-form input {
+.chat-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: calc(100% - 16px);
+  height: 48px;
+  padding: 0 5px 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 8px 24px rgba(0, 0, 0, 0.3);
+  transition:
+    width 0.6s var(--spring),
+    height 0.45s var(--spring),
+    background 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+}
+
+.chat-field:hover,
+.chat-field:focus-within {
+  width: 100%;
+  height: 54px;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow:
+    0 0 0 5px rgba(255, 255, 255, 0.05),
+    0 20px 44px rgba(0, 0, 0, 0.45);
+}
+
+.screen-dark .chat-field input {
   flex: 1;
   min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 0.92rem;
+  outline: none;
 }
 
 .chat-send {
   display: grid;
   place-items: center;
-  width: 44px;
-  height: 44px;
+  width: 38px;
+  height: 38px;
   flex-shrink: 0;
   border: 0;
   border-radius: 50%;
   background: #eef0f4;
   color: #08090b;
   cursor: pointer;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
   transition:
-    transform 0.15s,
+    width 0.45s var(--spring),
+    height 0.45s var(--spring),
+    transform 0.3s var(--spring),
     opacity 0.2s;
 }
 
+.chat-field:hover .chat-send,
+.chat-field:focus-within .chat-send {
+  width: 42px;
+  height: 42px;
+}
+
 .chat-send:hover:not(:disabled) {
-  transform: scale(1.06);
+  transform: scale(1.08) rotate(-12deg);
+}
+
+.chat-send:active:not(:disabled) {
+  transform: scale(0.94);
 }
 
 .chat-send:disabled {
   opacity: 0.3;
   cursor: default;
+  box-shadow: none;
+}
+
+/* New messages pop in with the same spring. */
+.msg-bubble {
+  animation: msg-in 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.msg.is-mine .msg-bubble {
+  transform-origin: right bottom;
+}
+.msg:not(.is-mine) .msg-bubble {
+  transform-origin: left bottom;
+}
+@keyframes msg-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.85);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chat-field,
+  .chat-send,
+  .msg-bubble {
+    transition-duration: 0.01s;
+    animation: none;
+  }
 }
 
 /* ---------- center: stage, share buttons, invite ---------- */
@@ -495,17 +1019,19 @@
 .share-choices {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   gap: 12px;
-  width: min(300px, 100%);
+  width: min(340px, 100%);
 }
 
 /* Plain white, very round, no ink animation. */
 .share-btn {
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
+  width: min(300px, 100%);
   height: 58px;
   padding: 0 28px;
   border: 0;
@@ -518,13 +1044,30 @@
   cursor: pointer;
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
   transition:
-    transform 0.15s,
-    background 0.2s,
-    opacity 0.2s;
+    width 0.6s var(--spring),
+    height 0.45s var(--spring),
+    background 0.3s ease,
+    box-shadow 0.3s ease,
+    transform 0.15s ease;
 }
 
-.share-btn:hover:not(:disabled) {
+/* Springs open on hover, like the invite link pill. */
+.share-btn:hover:not(:disabled),
+.share-btn:focus-visible {
+  width: min(340px, 100%);
+  height: 64px;
   background: #e9ebef;
+  box-shadow:
+    0 0 0 5px rgba(255, 255, 255, 0.06),
+    0 20px 44px rgba(0, 0, 0, 0.45);
+}
+
+.share-btn > .icon {
+  transition: transform 0.5s var(--spring);
+}
+
+.share-btn:hover:not(:disabled) > .icon {
+  transform: rotate(-12deg) scale(1.15);
 }
 
 .share-btn:active:not(:disabled) {
@@ -549,6 +1092,10 @@
 
 .share-btn.is-secondary:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.14);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28),
+    0 0 0 5px rgba(255, 255, 255, 0.05),
+    0 20px 44px rgba(0, 0, 0, 0.45);
 }
 
 .screen-dark .stage-badge {
@@ -556,7 +1103,6 @@
   top: 14px;
   left: 14px;
   background: rgba(8, 9, 11, 0.6);
-  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
 }
 
@@ -584,11 +1130,15 @@ video.is-mirrored {
 
 .invite-field {
   display: flex;
+  font: inherit;
+  user-select: none;
+  -webkit-user-select: none;
   align-items: center;
   gap: 10px;
   width: min(500px, 100%);
   height: 52px;
-  padding: 0 6px 0 18px;
+  /* Right side matches the icon + gap on the left, so the text sits centered. */
+  padding: 0 46px 0 18px;
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.06);
@@ -605,8 +1155,9 @@ video.is-mirrored {
     box-shadow 0.3s ease;
 }
 
+/* Grows on hover, or when reached with the keyboard (not after a mouse click). */
 .invite-field:hover,
-.invite-field:focus-within {
+.invite-field:focus-visible {
   width: min(580px, 100%);
   height: 58px;
   background: rgba(255, 255, 255, 0.1);
@@ -625,64 +1176,39 @@ video.is-mirrored {
   transform: rotate(-20deg) scale(1.12);
 }
 
-.screen-dark .invite-field input {
+.invite-text {
   flex: 1;
   min-width: 0;
-  height: 100%;
-  padding: 0;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.86rem;
   color: var(--text);
-  text-overflow: ellipsis;
-  cursor: pointer;
-  outline: none;
-}
-
-.invite-copy {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-  height: 40px;
-  padding: 0 16px 0 14px;
-  border: 0;
-  border-radius: 999px;
-  background: #eef0f4;
-  color: #08090b;
-  font: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
+  text-align: center;
   white-space: nowrap;
-  cursor: pointer;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
-  transition:
-    height 0.45s var(--spring),
-    background 0.3s ease,
-    color 0.3s ease,
-    transform 0.15s ease;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
-.invite-field:hover .invite-copy {
-  height: 46px;
-}
-
-.invite-copy:active {
-  transform: scale(0.96);
-}
-
-.invite.is-copied .invite-copy {
-  background: #2fd27a;
-  color: #04170c;
+/* Copied: the pill flashes green and the text says so for a moment. */
+.invite.is-copied .invite-field {
+  border-color: rgba(47, 210, 122, 0.6);
+  background: rgba(47, 210, 122, 0.12);
+  color: #2fd27a;
   animation: invite-pop 0.5s var(--spring);
+}
+
+.invite.is-copied .invite-text {
+  color: #2fd27a;
+}
+
+.invite-field:active {
+  transform: scale(0.98);
 }
 
 @keyframes invite-pop {
   40% {
-    transform: scale(1.1);
+    transform: scale(1.04);
   }
 }
 
@@ -696,11 +1222,10 @@ video.is-mirrored {
 @media (prefers-reduced-motion: reduce) {
   .invite-field,
   .invite-field > .icon,
-  .invite-copy,
   .icon-btn {
     transition-duration: 0.01s;
   }
-  .invite.is-copied .invite-copy {
+  .invite.is-copied .invite-field {
     animation: none;
   }
 }
@@ -727,7 +1252,6 @@ dialog.settings {
 
 dialog.settings::backdrop {
   background: rgba(0, 0, 0, 0.6);
-  -webkit-backdrop-filter: blur(6px);
   backdrop-filter: blur(6px);
 }
 
@@ -788,8 +1312,8 @@ dialog.settings::backdrop {
     height: auto;
     aspect-ratio: var(--ar, 16 / 9);
   }
-  .room-side.chat {
-    height: 420px;
+  .chat-wrap {
+    height: 456px;
   }
   /* The island becomes a row of avatars; names show on tap/hover as a tooltip (title). */
   .island,
@@ -893,7 +1417,6 @@ dialog.settings::backdrop {
   border-radius: 999px;
   background: rgba(8, 9, 11, 0.55);
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-  -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
 }
 
@@ -1015,7 +1538,6 @@ dialog.settings::backdrop {
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.1),
     0 18px 40px rgba(0, 0, 0, 0.55);
-  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   transform-origin: bottom right;
   animation: menu-in 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
@@ -1115,7 +1637,6 @@ dialog.settings::backdrop {
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.1),
     0 12px 30px rgba(0, 0, 0, 0.4);
-  -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
   translate: -50% 0;
 }
@@ -1285,7 +1806,6 @@ dialog.settings::backdrop {
   box-shadow:
     inset 0 0 0 1px rgba(255, 255, 255, 0.1),
     0 24px 50px rgba(0, 0, 0, 0.6);
-  -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   transform-origin: bottom left;
   animation: menu-in 0.22s cubic-bezier(0.34, 1.4, 0.64, 1);
@@ -2022,7 +2542,6 @@ dialog.settings::backdrop {
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.55);
   backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.25);
   color: #fff;
   cursor: pointer;
@@ -2050,7 +2569,6 @@ dialog.settings::backdrop {
   border-radius: 999px;
   background: rgba(13, 14, 17, 0.8);
   backdrop-filter: blur(16px) saturate(160%);
-  -webkit-backdrop-filter: blur(16px) saturate(160%);
   box-shadow:
     inset 0 0 0 0.5px rgba(255, 255, 255, 0.2),
     0 8px 24px rgba(0, 0, 0, 0.4);
@@ -2106,4 +2624,8 @@ dialog.settings::backdrop {
 }
 .is-spotlight .grid-tile:not(.is-main) .tile-sound-range {
   width: 80px;
+}
+
+.chat-list::-webkit-scrollbar {
+  display: none;
 }

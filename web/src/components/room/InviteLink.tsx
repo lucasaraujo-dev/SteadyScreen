@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { CheckIcon, CopyIcon, LinkIcon } from "@/components/icons";
+import { CheckIcon, LinkIcon } from "@/components/icons";
 
-/** "Convidar pessoas": the room link in our glass pill; one click copies it. */
+/** "Convidar pessoas": the room link in our glass pill; clicking it copies the link. */
 export default function InviteLink({ link }: { link: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -11,12 +11,8 @@ export default function InviteLink({ link }: { link: string }) {
     try {
       await navigator.clipboard.writeText(link);
     } catch {
-      // Clipboard blocked (e.g. plain http on another device): select the text instead.
-      const input = document.getElementById(
-        "invite-link",
-      ) as HTMLInputElement | null;
-      input?.select();
-      return;
+      // Clipboard API blocked (e.g. plain http on another device): old way.
+      if (!copyTheOldWay(link)) return;
     }
     setCopied(true);
     window.setTimeout(() => setCopied(false), 2200);
@@ -25,27 +21,35 @@ export default function InviteLink({ link }: { link: string }) {
   return (
     <div className={`invite${copied ? " is-copied" : ""}`}>
       <span className="invite-label">Convidar pessoas</span>
-      <div className="invite-field" onClick={copy}>
-        <LinkIcon size={18} />
-        <input
-          id="invite-link"
-          readOnly
-          value={link}
-          aria-label="Link da sala"
-          onFocus={(e) => e.currentTarget.select()}
-        />
-        <button
-          type="button"
-          className="invite-copy"
-          onClick={(e) => {
-            e.stopPropagation();
-            void copy();
-          }}
-        >
-          {copied ? <CheckIcon size={17} /> : <CopyIcon size={17} />}
-          <span>{copied ? "Copiado!" : "Copiar link"}</span>
-        </button>
-      </div>
+      {/* A button, not an input: the link can't be selected, only copied. */}
+      <button
+        type="button"
+        className="invite-field"
+        onClick={() => void copy()}
+        aria-label={`Copiar o link da sala: ${link}`}
+        title="Clique para copiar"
+      >
+        {copied ? <CheckIcon size={18} /> : <LinkIcon size={18} />}
+        <span className="invite-text">{link}</span>
+      </button>
     </div>
   );
+}
+
+function copyTheOldWay(text: string): boolean {
+  const area = document.createElement("textarea");
+  area.value = text;
+  area.setAttribute("readonly", "");
+  area.style.position = "fixed";
+  area.style.opacity = "0";
+  document.body.appendChild(area);
+  area.select();
+  let ok = false;
+  try {
+    ok = document.execCommand("copy");
+  } catch {
+    ok = false;
+  }
+  area.remove();
+  return ok;
 }

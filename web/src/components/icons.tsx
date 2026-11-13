@@ -207,3 +207,24 @@ export const TabIcon = (p: P) => (
     <path d="M3 8.5V18a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5a2 2 0 0 0-2-2h-7L10.5 4H5a2 2 0 0 0-2 2v2.5h18" />
   </Svg>
 );
+
+export const BellIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M6 9.5a6 6 0 0 1 12 0c0 4.5 1.8 6.2 2.5 7H3.5c.7-.8 2.5-2.5 2.5-7Z" />
+    <path d="M10 20a2.2 2.2 0 0 0 4 0" />
+  </Svg>
+);
+
+export const LockIcon = (p: P) => (
+  <Svg {...p}>
+    <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />
+    <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
+  </Svg>
+);
+
+export const HomeIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M3.5 10.5 12 3.5l8.5 7" />
+    <path d="M5.5 9v9.5a1.5 1.5 0 0 0 1.5 1.5h3.5v-5.5h3V20H17a1.5 1.5 0 0 0 1.5-1.5V9" />
+  </Svg>
+);

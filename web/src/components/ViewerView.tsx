@@ -10,6 +10,7 @@ import Participants from "@/components/room/Participants";
 import Settings from "@/components/room/Settings";
 import StageToolbar, { ToolButton } from "@/components/room/StageToolbar";
 import LiveIcon from "@/components/room/LiveIcon";
+import RoomNav from "@/components/room/RoomNav";
 import { useRoom } from "@/components/room/useRoom";
 import { stageStyle, useVideoAspect } from "@/components/room/useVideoAspect";
 import { getConfig } from "@/lib/api";
@@ -117,8 +118,14 @@ export default function ViewerView() {
 
   return (
     <div className="room">
-      {/* Navbar: intentionally empty for now. */}
-      <header className="room-nav glass" />
+      <RoomNav
+        roomId={id}
+        participants={room.participants}
+        notices={room.notices}
+        unread={room.unreadNotices}
+        onOpenNotices={room.markNoticesSeen}
+        onOpenSettings={room.openSettings}
+      />
 
       <div className="room-body">
         <Participants
@@ -189,7 +196,6 @@ export default function ViewerView() {
           selfId={room.selfId}
           disabled={!room.selfId}
           onSend={(t) => sessionRef.current?.sendChat(t)}
-          onOpenSettings={room.openSettings}
         />
       </div>
 
