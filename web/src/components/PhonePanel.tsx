@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Avatar } from "@/components/AvatarButton";
 import { CameraIcon, CloseIcon, MicIcon, PhoneIcon } from "@/components/icons";
 import { logOutAccount, useAccount } from "@/lib/account";
 import { getConfig } from "@/lib/api";
@@ -27,7 +26,6 @@ export default function PhonePanel() {
   const user = account.status === "user" ? account.user : null;
   const previewRef = useRef<HTMLVideoElement>(null);
   const [sender, setSender] = useState<PhoneSender | null>(null);
-  const [connected, setConnected] = useState(false);
   const [request, setRequest] = useState<PhoneRequest | null>(null);
   const [error, setError] = useState<string | null>(null);
   // What is being sent (copied from the sender whenever it changes).
@@ -42,7 +40,7 @@ export default function PhonePanel() {
       .then((cfg) => {
         if (cancelled) return;
         const s = new PhoneSender(cfg.iceServers, {
-          onConnected: setConnected,
+          onConnected: () => {},
           onRequest: (req) => {
             setRequest(req);
             navigator.vibrate?.([120, 80, 120]);
@@ -137,17 +135,6 @@ export default function PhonePanel() {
 
   return (
     <div className="phone-page">
-      {/* Just who this phone belongs to. */}
-      <header className="phone-head">
-        <span
-          className="phone-avatar"
-          aria-label={connected ? "Conectado" : "Conectando"}
-        >
-          <Avatar user={user} />
-        </span>
-        <strong className="phone-name">{user.name}</strong>
-      </header>
-
       {camera && (
         <section className="phone-card phone-live">
           <video

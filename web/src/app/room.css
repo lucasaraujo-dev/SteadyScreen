@@ -3153,46 +3153,6 @@ dialog.settings {
     inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
-/* Who this phone belongs to: the avatar and the name. */
-.phone-head {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  padding-top: 4px;
-  animation: phone-rise 0.6s var(--spring) both;
-}
-
-.phone-avatar {
-  position: relative;
-  display: grid;
-  place-items: center;
-  width: 76px;
-  height: 76px;
-  flex-shrink: 0;
-  border-radius: 50%;
-  background: #111214;
-  color: #fff;
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
-}
-
-.phone-avatar .avatar-img,
-.phone-avatar .avatar-initials {
-  border-radius: 50%;
-}
-
-.phone-name {
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 1.15rem;
-  font-weight: 700;
-}
-
 @keyframes phone-rise {
   from {
     opacity: 0;
