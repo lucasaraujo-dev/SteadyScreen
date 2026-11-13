@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -229,8 +230,8 @@ func (s *Store) saveChat(ctx context.Context, roomID string, userID int64, m Cha
 // recentChat returns the last `limit` messages of a room, oldest first.
 func (s *Store) recentChat(ctx context.Context, roomID string, limit int) ([]ChatMessage, error) {
 	rows, err := s.db.Query(ctx,
-		`SELECT id, name, text, created_at FROM (
-		   SELECT id, name, text, created_at FROM chat_messages
+		`SELECT id, user_id, name, text, created_at FROM (
+		   SELECT id, user_id, name, text, created_at FROM chat_messages
 		    WHERE room_id = $1 ORDER BY created_at DESC LIMIT $2
 		 ) recent ORDER BY created_at`, roomID, limit)
 	if err != nil {
@@ -239,8 +240,14 @@ func (s *Store) recentChat(ctx context.Context, roomID string, limit int) ([]Cha
 	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (ChatMessage, error) {
 		var m ChatMessage
 		var at time.Time
-		err := row.Scan(&m.ID, &m.Name, &m.Text, &at)
+		var userID *int64
+		err := row.Scan(&m.ID, &userID, &m.Name, &m.Text, &at)
 		m.At = at.UnixMilli()
+		// Guests' messages can't be tied to anyone after a reload.
+		m.Author = "g" + m.ID
+		if userID != nil {
+			m.Author = "u" + strconv.FormatInt(*userID, 10)
+		}
 		return m, err
 	})
 }

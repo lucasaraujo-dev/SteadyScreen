@@ -7,6 +7,7 @@ import { MAX_CHAT_LENGTH, type ChatMessage } from "@/lib/room";
 type Props = {
   messages: ChatMessage[];
   selfId: string | null;
+  selfAuthor?: string | null;
   disabled?: boolean;
   onSend: (text: string) => void;
 };
@@ -16,7 +17,18 @@ const time = new Intl.DateTimeFormat("pt-BR", {
   minute: "2-digit",
 });
 
-export default function Chat({ messages, selfId, disabled, onSend }: Props) {
+export default function Chat({
+  messages,
+  selfId,
+  selfAuthor,
+  disabled,
+  onSend,
+}: Props) {
+  // Who wrote a message: the account tag (kept after a reload), or the
+  // connection id for servers that don't send one.
+  const who = (m: ChatMessage) => m.author || m.from;
+  const me = selfAuthor || selfId;
+
   const [text, setText] = useState("");
   const listRef = useRef<HTMLOListElement>(null);
 
@@ -53,10 +65,10 @@ export default function Chat({ messages, selfId, disabled, onSend }: Props) {
             <li className="side-empty">Nenhuma mensagem ainda. Diga oi!</li>
           )}
           {messages.map((m, i) => {
-            const mine = m.from === selfId;
+            const mine = who(m) === me;
             const grouped =
               i > 0 &&
-              messages[i - 1].from === m.from &&
+              who(messages[i - 1]) === who(m) &&
               m.at - messages[i - 1].at < 120_000;
             return (
               <li

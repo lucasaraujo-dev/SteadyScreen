@@ -192,6 +192,7 @@ export default function ViewerView() {
         <Chat
           messages={room.messages}
           selfId={room.selfId}
+          selfAuthor={room.selfAuthor}
           disabled={!room.selfId}
           onSend={(t) => sessionRef.current?.sendChat(t)}
         />

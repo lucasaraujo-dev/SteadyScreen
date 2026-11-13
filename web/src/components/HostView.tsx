@@ -671,6 +671,7 @@ export default function HostView() {
         <Chat
           messages={room.messages}
           selfId={room.selfId}
+          selfAuthor={room.selfAuthor}
           disabled={!ready}
           onSend={(t) => sessionRef.current?.sendChat(t)}
         />

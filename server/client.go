@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
 	"sync"
 	"time"
 
@@ -65,6 +66,14 @@ func (c *Client) sendMsg(m Message) {
 		log.Printf("client %s too slow, dropping", c.id)
 		c.close()
 	}
+}
+
+// author is how this person's chat messages are tagged (see ChatMessage).
+func (c *Client) author() string {
+	if c.userID != 0 {
+		return "u" + strconv.FormatInt(c.userID, 10)
+	}
+	return "p" + c.id
 }
 
 func (c *Client) close() {

@@ -14,6 +14,8 @@ export type Participant = {
 
 export type ChatMessage = {
   id: string;
+  /** Who wrote it, also after a reload: "u<account>" or a guest tag. */
+  author?: string;
   from: string;
   name: string;
   text: string;
@@ -22,17 +24,20 @@ export type ChatMessage = {
 
 export type RoomEvents = {
   /** Our own peer id, known once the server welcomes us. */
-  onSelf?: (peerId: string) => void;
+  onSelf?: (peerId: string, author?: string) => void;
   onParticipants?: (list: Participant[]) => void;
   /** Called with the full history on join, then once per new message. */
   onChat?: (messages: ChatMessage[], isHistory: boolean) => void;
 };
 
 /** Handles the room-level messages. Returns true when the message was one of them. */
-export function handleRoomMessage(m: SignalMessage, events: RoomEvents): boolean {
+export function handleRoomMessage(
+  m: SignalMessage,
+  events: RoomEvents,
+): boolean {
   switch (m.type) {
     case "welcome":
-      events.onSelf?.(m.data.peerId);
+      events.onSelf?.(m.data.peerId, m.data.author);
       if (m.data.participants) events.onParticipants?.(m.data.participants);
       events.onChat?.(m.data.chat ?? [], true);
       return false; // sessions also need "welcome"

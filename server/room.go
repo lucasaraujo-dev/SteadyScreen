@@ -26,11 +26,14 @@ type Participant struct {
 
 // ChatMessage is one line in the room chat. The server stamps the author.
 type ChatMessage struct {
-	ID   string `json:"id"`
-	From string `json:"from"`
-	Name string `json:"name"`
-	Text string `json:"text"`
-	At   int64  `json:"at"` // unix milliseconds
+	ID string `json:"id"`
+	// Author says who wrote it and survives reloads: "u<account id>" for
+	// logged-in people, "p<peer id>" for guests (only while they're here).
+	Author string `json:"author"`
+	From   string `json:"from"`
+	Name   string `json:"name"`
+	Text   string `json:"text"`
+	At     int64  `json:"at"` // unix milliseconds
 }
 
 // participants lists the host first, then viewers in the order they joined.
@@ -92,7 +95,7 @@ func (h *Hub) chatMessage(c *Client, data json.RawMessage) {
 	if r == nil || !r.isMember(c) {
 		return
 	}
-	msg := ChatMessage{ID: randomHex(8), From: c.id, Name: c.name, Text: text, At: time.Now().UnixMilli()}
+	msg := ChatMessage{ID: randomHex(8), Author: c.author(), From: c.id, Name: c.name, Text: text, At: time.Now().UnixMilli()}
 	r.chat = append(r.chat, msg)
 	if len(r.chat) > chatHistory {
 		r.chat = r.chat[len(r.chat)-chatHistory:]

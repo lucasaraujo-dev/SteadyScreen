@@ -202,7 +202,7 @@ func (h *Hub) join(ctx context.Context, c *Client, roomID, token, name string, u
 		}
 		c.sendMsg(Message{Type: "welcome", Data: mustJSON(map[string]any{
 			"role": roleHost, "peerId": c.id, "viewers": ids, "maxViewers": h.cfg.MaxViewers,
-			"participants": r.participants(), "chat": r.chat,
+			"participants": r.participants(), "chat": r.chat, "author": c.author(),
 		})})
 		for _, v := range r.viewers {
 			v.sendMsg(Message{Type: "host-online"})
@@ -218,7 +218,7 @@ func (h *Hub) join(ctx context.Context, c *Client, roomID, token, name string, u
 	r.viewers[c.id] = c
 	c.sendMsg(Message{Type: "welcome", Data: mustJSON(map[string]any{
 		"role": roleViewer, "peerId": c.id, "hostOnline": r.host != nil, "maxViewers": h.cfg.MaxViewers,
-		"participants": r.participants(), "chat": r.chat,
+		"participants": r.participants(), "chat": r.chat, "author": c.author(),
 	})})
 	if r.host != nil {
 		r.host.sendMsg(Message{Type: "viewer-joined", Data: mustJSON(map[string]string{"peerId": c.id})})

@@ -18,6 +18,7 @@ export type RoomNotice = {
 /** Participants, chat and our own identity, fed by a Host/Viewer session. */
 export function useRoom() {
   const [selfId, setSelfId] = useState<string | null>(null);
+  const [selfAuthor, setSelfAuthor] = useState<string | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -30,9 +31,10 @@ export function useRoom() {
   // Stable callbacks to hand to the session.
   const roomEvents: RoomEvents = useMemo(
     () => ({
-      onSelf: (id) => {
+      onSelf: (id, author) => {
         selfRef.current = id;
         setSelfId(id);
+        setSelfAuthor(author ?? null);
       },
       onParticipants: (list) => {
         // Compare with the last list to tell who came, left or went live.
@@ -72,6 +74,8 @@ export function useRoom() {
 
   return {
     selfId,
+    /** How our own chat messages are tagged (see ChatMessage.author). */
+    selfAuthor,
     selfName,
     participants,
     messages,
