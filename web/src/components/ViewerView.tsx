@@ -102,7 +102,7 @@ export default function ViewerView() {
     return (
       <div className="room-message">
         <div className="hero glass">
-          <p className="alert">{errorText(reason)}</p>
+          <p className="room-message-text">{errorText(reason)}</p>
           <p style={{ marginTop: 24 }}>
             <Link className="btn" href="/" transitionTypes={["nav-back"]}>
               Voltar ao início

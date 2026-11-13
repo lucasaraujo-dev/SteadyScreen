@@ -57,9 +57,6 @@ export class HostSession {
     this.signaling = new Signaling(
       { room: roomId, role: "host", token, name },
       (m) => this.onMessage(m),
-      (unexpected) => {
-        if (unexpected && !this.stopped) this.events.onError("disconnected");
-      },
     );
   }
 
@@ -134,7 +131,13 @@ export class HostSession {
     if (handleRoomMessage(m, this.events)) return;
     switch (m.type) {
       case "welcome":
-        for (const id of m.data.viewers as string[]) this.viewers.add(id);
+        {
+          // After a reconnect the server's list is the truth: drop viewers who left meanwhile.
+          const now = new Set(m.data.viewers as string[]);
+          for (const id of [...this.viewers])
+            if (!now.has(id)) this.closePeer(id);
+          this.viewers = now;
+        }
         this.events.onConnected();
         // After a reconnect, tell the room again what we are sharing.
         if (this.sharing)
@@ -161,6 +164,7 @@ export class HostSession {
       case "error":
         // The server closes the socket right after; keep this reason, not "disconnected".
         this.stopped = true;
+        this.signaling.giveUp();
         this.events.onError(m.data?.reason ?? "unknown");
         break;
     }

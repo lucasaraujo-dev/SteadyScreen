@@ -33,8 +33,11 @@ export class ViewerSession {
     this.signaling = new Signaling(
       { room: roomId, role: "viewer", name },
       (m) => this.onMessage(m),
-      (unexpected) => {
-        if (unexpected && !this.stopped) this.events.onStatus("error", "disconnected");
+      () => {
+        // Connection to the server dropped; Signaling connects again by itself.
+        if (this.stopped) return;
+        this.closePeer();
+        this.events.onStatus("connecting");
       },
     );
   }
@@ -79,6 +82,7 @@ export class ViewerSession {
       case "error":
         // The server closes the socket right after; keep this reason, not "disconnected".
         this.stopped = true;
+        this.signaling.giveUp();
         this.events.onStatus("error", m.data?.reason ?? "unknown");
         break;
     }

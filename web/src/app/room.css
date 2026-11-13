@@ -1012,10 +1012,6 @@
   background: transparent;
 }
 
-.room-center > .alert {
-  flex-shrink: 0;
-}
-
 .share-choices {
   display: flex;
   flex-direction: column;

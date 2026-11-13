@@ -400,7 +400,7 @@ export default function HostView() {
     return (
       <div className="room-message">
         <div className="hero glass">
-          <p className="alert">{errorText(problem)}</p>
+          <p className="room-message-text">{errorText(problem)}</p>
           <p style={{ marginTop: 24 }}>
             <Link
               className="btn btn-primary"
@@ -654,7 +654,13 @@ export default function HostView() {
             </div>
           </div>
 
-          {error && <p className="alert">{errorText(error)}</p>}
+          {error && !notice && (
+            <Toast
+              key={error}
+              message={errorText(error)}
+              onDone={() => setError(null)}
+            />
+          )}
           {notice && (
             <Toast key={notice} message={notice} onDone={clearNotice} />
           )}

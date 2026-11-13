@@ -490,11 +490,6 @@ code {
   justify-content: flex-start;
 }
 
-.home-alert {
-  margin-top: 8px;
-  max-width: 520px;
-}
-
 @media (max-width: 960px) {
   .home {
     grid-template-columns: minmax(0, 1fr);
@@ -1523,12 +1518,11 @@ input::placeholder {
   box-shadow: inset 0 0 0 1px #111214;
 }
 
-.alert {
-  padding: 14px 18px;
-  border: 1px solid rgba(196, 38, 46, 0.3);
-  border-radius: var(--radius-sm);
-  background: rgba(255, 235, 236, 0.6);
-  font-size: 0.95rem;
+/* Message on a room page that can't open (no red box, just text). */
+.room-message-text {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
 }
 
 .spinner {
@@ -1716,11 +1710,6 @@ input::placeholder {
   background: rgba(255, 255, 255, 0.1);
   border-color: #eef0f4;
   box-shadow: inset 0 0 0 1px #eef0f4;
-}
-
-.screen-dark .alert {
-  border-color: rgba(255, 107, 116, 0.35);
-  background: rgba(255, 80, 95, 0.1);
 }
 
 .screen-dark .spinner {

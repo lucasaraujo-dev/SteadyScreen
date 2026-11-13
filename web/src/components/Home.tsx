@@ -9,6 +9,7 @@ import Logo3D from "@/components/Logo3D";
 import { refreshAccount, useAccount } from "@/lib/account";
 import { ApiError, createRoom, saveHostToken } from "@/lib/api";
 import { errorText } from "@/lib/messages";
+import Toast from "@/components/room/Toast";
 
 /** Home: the pitch on the left, the account (or sign in / sign up) on the right. */
 export default function Home() {
@@ -108,7 +109,9 @@ export default function Home() {
           </div>
         )}
 
-        {error && <p className="alert home-alert">{error}</p>}
+        {error && (
+          <Toast key={error} message={error} onDone={() => setError(null)} />
+        )}
       </div>
 
       <aside className="home-side" aria-label="Sua conta">
