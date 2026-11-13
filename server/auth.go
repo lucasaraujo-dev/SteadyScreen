@@ -204,7 +204,12 @@ func (a *Auth) me(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusUnauthorized, "not-logged-in")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"user": u})
+	// "device" is set when this browser is a phone linked with the QR code.
+	device := ""
+	if c, err := r.Cookie(sessionCookie); err == nil {
+		device, _ = a.store.sessionDevice(r.Context(), c.Value)
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"user": u, "device": device})
 }
 
 // ---------- helpers ----------

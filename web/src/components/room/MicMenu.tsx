@@ -3,7 +3,9 @@
 import { useEffect, useRef, useState } from "react";
 import Dropdown from "@/components/room/Dropdown";
 import { KeyPicker, Toggle } from "@/components/room/MenuControls";
+import PhoneRows from "@/components/room/PhoneRows";
 import { listMicrophones, type MicSettings } from "@/lib/mic";
+import type { Phone } from "@/lib/phoneBridge";
 
 type Props = {
   settings: MicSettings;
@@ -12,6 +14,11 @@ type Props = {
   getLevel: () => number | null;
   /** Key used by another shortcut, to warn about clashes. */
   takenKey?: string;
+  /** Linked phones online, and the one whose mic is in use. */
+  phones: Phone[];
+  phoneId?: string;
+  onPhone: (phone: Phone) => void;
+  onComputer: () => void;
 };
 
 /** Options under the mic's arrow: device, volume, filters, push-to-talk. */
@@ -20,6 +27,10 @@ export default function MicMenu({
   onChange,
   getLevel,
   takenKey,
+  phones,
+  phoneId,
+  onPhone,
+  onComputer,
 }: Props) {
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
   const meterRef = useRef<HTMLSpanElement>(null);
@@ -86,10 +97,13 @@ export default function MicMenu({
         />
       </div>
 
-      <button type="button" className="menu-row is-soon" disabled>
-        <span>Usar o celular como microfone</span>
-        <span className="soon-pill">Em breve</span>
-      </button>
+      <PhoneRows
+        what="microfone"
+        phones={phones}
+        phoneId={phoneId}
+        onPick={onPhone}
+        onStop={onComputer}
+      />
 
       <div className="menu-field">
         <span className="menu-field-head">

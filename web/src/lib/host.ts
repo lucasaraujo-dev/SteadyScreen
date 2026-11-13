@@ -3,6 +3,7 @@
 // (one upload, server fans out) without changing the pages.
 
 import { preferVideoFormats, videoFormatOf, type VideoFormat } from "./codecs";
+import { PhoneBridge, type Phone } from "./phoneBridge";
 import { handleRoomMessage, type RoomEvents, type Sharing } from "./room";
 import { Signaling, type SignalMessage } from "./signaling";
 
@@ -19,6 +20,8 @@ export type HostEvents = RoomEvents & {
   /** watchingIds = viewers whose video connection is up. */
   onViewers: (joined: number, watching: number, watchingIds: string[]) => void;
   onError: (reason: string) => void;
+  /** The account's linked phones that are online (to use as camera / mic). */
+  onPhones?: (phones: Phone[]) => void;
 };
 
 const QUALITY: Record<
@@ -46,6 +49,8 @@ export class HostSession {
   private output: Output = DEFAULT_OUTPUT;
   private sharing: Sharing = "";
   private stopped = false;
+  /** Talks to the account's phones (camera / mic from the phone). */
+  readonly phones: PhoneBridge;
 
   constructor(
     roomId: string,
@@ -57,6 +62,10 @@ export class HostSession {
     this.signaling = new Signaling(
       { room: roomId, role: "host", token, name },
       (m) => this.onMessage(m),
+    );
+    this.phones = new PhoneBridge(
+      (type, to, data) => this.signaling.send(type, to, data),
+      iceServers,
     );
   }
 
@@ -124,11 +133,17 @@ export class HostSession {
   stop() {
     this.stopped = true;
     for (const id of [...this.peers.keys()]) this.closePeer(id);
+    this.phones.stopAll();
     this.signaling.close();
   }
 
   private onMessage(m: SignalMessage) {
     if (handleRoomMessage(m, this.events)) return;
+    if (m.type === "phones") {
+      this.events.onPhones?.(m.data ?? []);
+      return;
+    }
+    if (this.phones.handle(m)) return;
     switch (m.type) {
       case "welcome":
         {

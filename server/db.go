@@ -222,6 +222,15 @@ func (s *Store) deleteDevice(ctx context.Context, userID, id int64) error {
 	return err
 }
 
+// sessionDevice is the linked phone's name for a session ("" for others).
+func (s *Store) sessionDevice(ctx context.Context, token string) (string, error) {
+	var device string
+	err := s.db.QueryRow(ctx,
+		`SELECT device FROM sessions WHERE token_hash = $1 AND expires_at > now()`,
+		tokenHash(token)).Scan(&device)
+	return device, err
+}
+
 func (s *Store) userBySession(ctx context.Context, token string) (User, error) {
 	u, err := scanUser(s.db.QueryRow(ctx,
 		`SELECT `+userCols+`

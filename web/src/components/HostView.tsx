@@ -12,6 +12,7 @@ import {
 import {
   CameraIcon,
   EyeOffIcon,
+  PhoneIcon,
   PhoneOffIcon,
   ScreenIcon,
 } from "@/components/icons";
@@ -63,6 +64,7 @@ import {
   saveMicSettings,
   type MicSettings,
 } from "@/lib/mic";
+import type { Phone } from "@/lib/phoneBridge";
 import { loadName, type Sharing } from "@/lib/room";
 
 export default function HostView() {
@@ -74,11 +76,20 @@ export default function HostView() {
   // Our microphone, captured the first time it is turned on and reused after.
   const micRef = useRef<MediaStreamTrack | null>(null);
   const micObjRef = useRef<Microphone | null>(null);
+  // A linked phone lending its camera / mic right now (null = this computer's).
+  const phoneCamRef = useRef<Phone | null>(null);
+  const phoneMicRef = useRef<Phone | null>(null);
   const room = useRoom();
 
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  // Good news in a green toast ("Microfone do celular ligado").
+  const [info, setInfo] = useState<string | null>(null);
+  // The account's linked phones that are online, and which one is in use.
+  const [phones, setPhones] = useState<Phone[]>([]);
+  const [phoneCam, setPhoneCam] = useState<Phone | null>(null);
+  const [phoneMic, setPhoneMic] = useState<Phone | null>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [source, setSource] = useState<Sharing>("");
   const [quality, setQuality] = useState<Quality>("detail");
@@ -145,6 +156,7 @@ export default function HostView() {
             onConnected: () => setReady(true),
             onViewers: (_joined, _watching, ids) => setWatchingIds(ids),
             onError: (reason) => setError(reason),
+            onPhones: setPhones,
           },
         );
       })
@@ -214,7 +226,14 @@ export default function HostView() {
     if (previewRef.current) previewRef.current.srcObject = stream;
   }, [stream]);
 
-  function publish(media: MediaStream, kind: Sharing) {
+  function publish(media: MediaStream, kind: Sharing, fromPhone?: Phone) {
+    // Switching away from the phone's camera: tell the phone to stop.
+    const usedPhone = phoneCamRef.current;
+    if (usedPhone && usedPhone !== fromPhone) {
+      sessionRef.current?.phones.stop(usedPhone.id, "camera");
+      phoneCamRef.current = null;
+      setPhoneCam(null);
+    }
     const video = media.getVideoTracks()[0];
     video.contentHint = kind === "camera" ? "motion" : quality;
     // The browser's own "Stop sharing" button (or unplugging the camera) ends the track.
@@ -287,6 +306,12 @@ export default function HostView() {
     media?.getTracks().forEach((t) => t !== micRef.current && t.stop());
     // An old capture ending after switching sources must not stop the new one.
     if (media && streamRef.current !== media) return;
+    const usedPhone = phoneCamRef.current;
+    if (usedPhone) {
+      sessionRef.current?.phones.stop(usedPhone.id, "camera");
+      phoneCamRef.current = null;
+      setPhoneCam(null);
+    }
     sessionRef.current?.setStream(null, quality);
     setStream((current) => (current === media ? null : current));
     setSource("");
@@ -329,7 +354,108 @@ export default function HostView() {
   function closeMic() {
     micObjRef.current?.stop();
     micObjRef.current = null;
+    const usedPhone = phoneMicRef.current;
+    if (usedPhone) {
+      sessionRef.current?.phones.stop(usedPhone.id, "mic");
+      phoneMicRef.current = null;
+      setPhoneMic(null);
+    }
     micRef.current = null;
+  }
+
+  /** Ask a linked phone for its camera; it starts once accepted on the phone. */
+  function sharePhoneCamera(phone: Phone) {
+    const session = sessionRef.current;
+    if (!session) return;
+    setNotice(null);
+    setInfo(`Pedido enviado para ${phone.name}. Aceite no celular.`);
+    session.phones.request(phone.id, "camera", {
+      onStream: (media) => {
+        phoneCamRef.current = phone;
+        setPhoneCam(phone);
+        setInfo(null);
+        publish(media, "camera", phone);
+      },
+      onDeclined: (blocked) => {
+        setInfo(null);
+        setNotice(
+          blocked
+            ? `O ${phone.name} não deixou abrir a câmera. Permita a câmera no navegador do celular.`
+            : `${phone.name} recusou usar a câmera.`,
+        );
+      },
+      onEnded: () => {
+        if (phoneCamRef.current?.id !== phone.id) return;
+        phoneCamRef.current = null;
+        setPhoneCam(null);
+        stopSharing(streamRef.current);
+        setNotice("A câmera do celular parou.");
+      },
+    });
+  }
+
+  /** Ask a linked phone for its microphone, in place of this computer's. */
+  function askPhoneMic(phone: Phone) {
+    const session = sessionRef.current;
+    if (!session) return;
+    setNotice(null);
+    setInfo(`Pedido enviado para ${phone.name}. Aceite no celular.`);
+    session.phones.request(phone.id, "mic", {
+      onStream: (media) => {
+        const track = media.getAudioTracks()[0];
+        if (!track) return;
+        const old = micRef.current;
+        micObjRef.current?.stop(); // this computer's mic is no longer needed
+        micObjRef.current = null;
+        phoneMicRef.current = phone;
+        setPhoneMic(phone);
+        micRef.current = track;
+        track.enabled = !deafened && (!micSettings.pushToTalk || pttHeld);
+        setMicOn(true);
+        const current = streamRef.current;
+        if (current) {
+          if (old) current.removeTrack(old);
+          current.addTrack(track);
+          sessionRef.current?.setStream(current, quality, source);
+        }
+        setInfo(`Microfone do ${phone.name} ligado`);
+      },
+      onDeclined: (blocked) => {
+        setInfo(null);
+        setNotice(
+          blocked
+            ? `O ${phone.name} não deixou abrir o microfone. Permita o microfone no navegador do celular.`
+            : `${phone.name} recusou usar o microfone.`,
+        );
+      },
+      onEnded: () => {
+        if (phoneMicRef.current?.id !== phone.id) return;
+        const track = micRef.current;
+        phoneMicRef.current = null;
+        setPhoneMic(null);
+        micRef.current = null;
+        setMicOn(false);
+        const current = streamRef.current;
+        if (current && track) {
+          current.removeTrack(track);
+          sessionRef.current?.setStream(current, quality, source);
+        }
+        setNotice("O microfone do celular parou.");
+      },
+    });
+  }
+
+  /** Back to this computer's own microphone. */
+  function backToComputerMic() {
+    if (!phoneMicRef.current) return;
+    const track = micRef.current;
+    closeMic();
+    setMicOn(false);
+    const current = streamRef.current;
+    if (current && track) {
+      current.removeTrack(track);
+      sessionRef.current?.setStream(current, quality, source);
+    }
   }
 
   const clearNotice = useCallback(() => setNotice(null), []);
@@ -479,7 +605,9 @@ export default function HostView() {
                   muted
                   playsInline
                   hidden={!stream || previewHidden || showGrid || !!focused}
-                  className={source === "camera" ? "is-mirrored" : undefined}
+                  className={
+                    source === "camera" && !phoneCam ? "is-mirrored" : undefined
+                  }
                 />
                 {!stream && !inCall && (
                   <div className="stage-empty">
@@ -513,6 +641,17 @@ export default function HostView() {
                         <CameraIcon size={22} />
                         Compartilhar câmera
                       </button>
+                      {phones.map((p) => (
+                        <button
+                          key={p.id}
+                          className="share-btn is-secondary"
+                          onClick={() => sharePhoneCamera(p)}
+                          disabled={!ready}
+                        >
+                          <PhoneIcon size={22} />
+                          Câmera do {p.name}
+                        </button>
+                      ))}
                     </div>
                     {!ready && <p className="hint">Conectando ao servidor…</p>}
                   </div>
@@ -625,7 +764,14 @@ export default function HostView() {
                     />
                   }
                   cameraOptions={
-                    <CameraMenu cameraId={cameraId} onChange={changeCamera} />
+                    <CameraMenu
+                      cameraId={cameraId}
+                      onChange={changeCamera}
+                      phones={phones}
+                      phoneId={phoneCam?.id}
+                      onPhone={sharePhoneCamera}
+                      onPhoneStop={() => stopSharing()}
+                    />
                   }
                   screenOptions={
                     <ScreenMenu
@@ -640,6 +786,10 @@ export default function HostView() {
                     <MicMenu
                       settings={micSettings}
                       onChange={changeMicSettings}
+                      phones={phones}
+                      phoneId={phoneMic?.id}
+                      onPhone={askPhoneMic}
+                      onComputer={backToComputerMic}
                       getLevel={micLevel}
                       takenKey={
                         audioSettings.deafenShortcut
@@ -669,6 +819,14 @@ export default function HostView() {
           )}
           {notice && (
             <Toast key={notice} message={notice} onDone={clearNotice} />
+          )}
+          {info && !notice && (
+            <Toast
+              key={info}
+              message={info}
+              tone="ok"
+              onDone={() => setInfo(null)}
+            />
           )}
 
           <InviteLink link={link} />

@@ -9,7 +9,10 @@ import { getMe, logIn, logOut, signUp, type User } from "@/lib/api";
  * GET /api/me.
  */
 export type Account =
-  { status: "loading" } | { status: "guest" } | { status: "user"; user: User };
+  | { status: "loading" }
+  | { status: "guest" }
+  /** `device`: this browser is a phone linked with the QR code. */
+  | { status: "user"; user: User; device?: string };
 
 const LOADING: Account = { status: "loading" };
 let current: Account = LOADING;
@@ -33,8 +36,8 @@ function subscribe(listener: () => void) {
 /** Ask the server again who we are. */
 export async function refreshAccount() {
   try {
-    const { user } = await getMe();
-    set({ status: "user", user });
+    const { user, device } = await getMe();
+    set({ status: "user", user, device: device || undefined });
   } catch {
     set({ status: "guest" });
   }
@@ -71,6 +74,7 @@ export async function logOutAccount() {
 }
 
 /** Show the account the server just sent back (after changing a setting). */
-export function updateUser(user: User) {
-  set({ status: "user", user });
+export function updateUser(user: User, device?: string) {
+  const keep = current.status === "user" ? current.device : undefined;
+  set({ status: "user", user, device: device ?? keep });
 }

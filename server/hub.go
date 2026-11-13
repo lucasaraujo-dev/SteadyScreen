@@ -40,10 +40,13 @@ type Hub struct {
 	cfg   Config
 	store *Store
 	auth  *Auth
+	// Linked phones online, by account (see phone.go).
+	phones map[int64]map[string]*Client
 }
 
 func newHub(cfg Config, store *Store, auth *Auth) *Hub {
-	h := &Hub{rooms: make(map[string]*Room), cfg: cfg, store: store, auth: auth}
+	h := &Hub{rooms: make(map[string]*Room), cfg: cfg, store: store, auth: auth,
+		phones: make(map[int64]map[string]*Client)}
 	go h.janitor()
 	return h
 }
@@ -228,6 +231,9 @@ func (h *Hub) join(ctx context.Context, c *Client, roomID, token, name string, u
 			v.sendMsg(Message{Type: "host-online"})
 		}
 		h.broadcastParticipants(r)
+		if c.userID != 0 {
+			c.sendMsg(Message{Type: "phones", Data: mustJSON(h.phonesOfLocked(c.userID))})
+		}
 		log.Printf("room %s: host connected (%d viewers waiting)", r.ID, len(ids))
 		return ""
 	}
@@ -262,6 +268,10 @@ func (h *Hub) leave(c *Client) {
 		}
 		r.host = nil
 		r.idleSince = time.Now()
+		// Phones lending their camera or mic to this host stop.
+		for _, p := range h.phones[c.userID] {
+			p.sendMsg(Message{Type: "phone-host-gone", From: c.id})
+		}
 		for _, v := range r.viewers {
 			v.sendMsg(Message{Type: "host-left"})
 		}

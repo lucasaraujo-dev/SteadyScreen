@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import AccountCard from "@/components/AccountCard";
 import AuthCard from "@/components/AuthCard";
 import { ArrowRightIcon, LinkIcon } from "@/components/icons";
@@ -19,6 +19,12 @@ export default function Home() {
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [code, setCode] = useState("");
+
+  // A phone linked with the QR code has its own simple screen.
+  const linkedPhone = account.status === "user" && !!account.device;
+  useEffect(() => {
+    if (linkedPhone) router.replace("/celular");
+  }, [linkedPhone, router]);
 
   const hasCode = code.trim().length > 0;
   // A bare code (not a pasted link) is shown spaced out in monospace.

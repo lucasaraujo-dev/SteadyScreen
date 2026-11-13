@@ -61,7 +61,7 @@ export default function LinkPhone() {
               if (r.user) {
                 updateUser(r.user);
                 setStep({ kind: "done", name: r.user.name });
-                timer = setTimeout(() => router.push("/"), 1600);
+                timer = setTimeout(() => router.push("/celular"), 1600);
               } else {
                 timer = setTimeout(poll, 1500);
               }

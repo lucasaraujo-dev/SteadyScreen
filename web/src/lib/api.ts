@@ -86,7 +86,8 @@ export const deleteRoom = (id: string) =>
   post<void>(`/api/rooms/${encodeURIComponent(id)}`, undefined, "DELETE");
 export const getConfig = () => request<ServerConfig>("/api/config");
 
-export const getMe = () => request<{ user: User }>("/api/me");
+/** `device` is the linked phone's name when this browser is one ("" if not). */
+export const getMe = () => request<{ user: User; device?: string }>("/api/me");
 export const getMyRooms = () => request<{ rooms: MyRoom[] }>("/api/me/rooms");
 export const signUp = (name: string, email: string, password: string) =>
   post<{ user: User }>("/api/auth/signup", { name, email, password });

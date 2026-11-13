@@ -2,11 +2,18 @@
 
 import { useEffect, useState } from "react";
 import Dropdown from "@/components/room/Dropdown";
+import PhoneRows from "@/components/room/PhoneRows";
+import type { Phone } from "@/lib/phoneBridge";
 
 type Props = {
   /** "" = the system default webcam. */
   cameraId: string;
   onChange: (cameraId: string) => void;
+  /** Linked phones online, and the one whose camera is in use. */
+  phones: Phone[];
+  phoneId?: string;
+  onPhone: (phone: Phone) => void;
+  onPhoneStop: () => void;
 };
 
 const CAMERA_KEY = "steadyscreen:camera";
@@ -32,8 +39,15 @@ async function listCameras(): Promise<MediaDeviceInfo[]> {
   return all.filter((d) => d.kind === "videoinput");
 }
 
-/** Options under the camera's arrow: which webcam, and (soon) the phone. */
-export default function CameraMenu({ cameraId, onChange }: Props) {
+/** Options under the camera's arrow: which webcam, or a linked phone. */
+export default function CameraMenu({
+  cameraId,
+  onChange,
+  phones,
+  phoneId,
+  onPhone,
+  onPhoneStop,
+}: Props) {
   // null until the first listing comes back, so "no webcam" doesn't flash.
   const [devices, setDevices] = useState<MediaDeviceInfo[] | null>(null);
 
@@ -81,10 +95,13 @@ export default function CameraMenu({ cameraId, onChange }: Props) {
         )}
       </div>
 
-      <button type="button" className="menu-row is-soon" disabled>
-        <span>Usar o celular como câmera</span>
-        <span className="soon-pill">Em breve</span>
-      </button>
+      <PhoneRows
+        what="câmera"
+        phones={phones}
+        phoneId={phoneId}
+        onPick={onPhone}
+        onStop={onPhoneStop}
+      />
     </div>
   );
 }

@@ -121,20 +121,10 @@ func (h *Hub) readPump(c *Client) {
 		h.leave(c)
 		c.close()
 	}()
-	c.conn.SetReadLimit(maxMessageSize)
-	c.conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.conn.SetPongHandler(func(string) error {
-		c.conn.SetReadDeadline(time.Now().Add(pongWait))
-		return nil
-	})
-	for {
-		_, data, err := c.conn.ReadMessage()
-		if err != nil {
+	h.readLoop(c, func(m Message) {
+		if len(m.Type) > 6 && m.Type[:6] == "phone-" {
+			h.phoneRelay(c, m)
 			return
-		}
-		var m Message
-		if err := json.Unmarshal(data, &m); err != nil {
-			continue
 		}
 		switch m.Type {
 		case "ice":
@@ -156,10 +146,33 @@ func (h *Hub) readPump(c *Client) {
 				h.setSharing(c, m.Data)
 			}
 		}
+	})
+}
+
+// readLoop reads messages until the connection closes, keeping it alive
+// with pings.
+func (h *Hub) readLoop(c *Client, handle func(Message)) {
+	c.conn.SetReadLimit(maxMessageSize)
+	c.conn.SetReadDeadline(time.Now().Add(pongWait))
+	c.conn.SetPongHandler(func(string) error {
+		c.conn.SetReadDeadline(time.Now().Add(pongWait))
+		return nil
+	})
+	for {
+		_, data, err := c.conn.ReadMessage()
+		if err != nil {
+			return
+		}
+		var m Message
+		if err := json.Unmarshal(data, &m); err != nil {
+			continue
+		}
+		handle(m)
 	}
 }
 
-// serveWS handles GET /ws?room=ID&role=host|viewer[&token=HOST_TOKEN].
+// serveWS handles GET /ws?room=ID&role=host|viewer[&token=HOST_TOKEN],
+// and GET /ws?role=phone for a logged-in phone (see phone.go).
 func (h *Hub) serveWS(w http.ResponseWriter, r *http.Request) {
 	upgrader := websocket.Upgrader{
 		ReadBufferSize:  4096,
@@ -168,13 +181,17 @@ func (h *Hub) serveWS(w http.ResponseWriter, r *http.Request) {
 	}
 	q := r.URL.Query()
 	role := q.Get("role")
-	if role != roleHost && role != roleViewer {
+	if role != roleHost && role != roleViewer && role != rolePhone {
 		http.Error(w, "invalid role", http.StatusBadRequest)
 		return
 	}
 	var user *User
 	if u, ok := h.auth.currentUser(r); ok {
 		user = &u
+	}
+	if role == rolePhone && user == nil {
+		http.Error(w, "not logged in", http.StatusUnauthorized)
+		return
 	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -189,6 +206,13 @@ func (h *Hub) serveWS(w http.ResponseWriter, r *http.Request) {
 	}
 	go c.writePump()
 
+	if role == rolePhone {
+		c.userID = user.ID
+		c.name = h.auth.phoneName(r)
+		h.addPhone(c)
+		h.phoneReadPump(c)
+		return
+	}
 	if code := h.join(r.Context(), c, q.Get("room"), q.Get("token"), q.Get("name"), user); code != "" {
 		c.sendMsg(Message{Type: "error", Data: mustJSON(map[string]string{"reason": code})})
 		c.close()
