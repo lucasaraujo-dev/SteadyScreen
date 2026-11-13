@@ -129,6 +129,25 @@ func (h *Hub) closeRoom(id string) {
 	delete(h.rooms, id)
 }
 
+// updateUser shows an account's new name or photo in every room it's in.
+func (h *Hub) updateUser(u User) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	name := cleanName(u.Name, "")
+	for _, r := range h.rooms {
+		changed := false
+		for _, c := range r.members() {
+			if c.userID == u.ID && (c.name != name || c.avatar != u.AvatarURL) {
+				c.name, c.avatar = name, u.AvatarURL
+				changed = true
+			}
+		}
+		if changed {
+			h.broadcastParticipants(r)
+		}
+	}
+}
+
 // liveInfo tells whether a room's host is on and how many people watch.
 func (h *Hub) liveInfo(id string) (live bool, viewers int) {
 	h.mu.Lock()
@@ -179,6 +198,7 @@ func (h *Hub) join(ctx context.Context, c *Client, roomID, token, name string, u
 	c.room = r
 	if user != nil {
 		c.userID = user.ID
+		c.avatar = user.AvatarURL
 		name = user.Name
 	}
 	c.name = cleanName(name, c.role)

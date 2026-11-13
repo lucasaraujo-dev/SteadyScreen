@@ -24,6 +24,7 @@ func main() {
 	}
 	auth := newAuth(store, loadMailer())
 	hub := newHub(cfg, store, auth)
+	auth.onChange = hub.updateUser
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {

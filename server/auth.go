@@ -35,6 +35,8 @@ type Auth struct {
 	limiter     *limiter // password guesses per address
 	codeLimiter *limiter // confirmation emails per account
 	mail        *Mailer
+	// onChange runs after someone's name or photo changes (rooms show it live).
+	onChange func(User)
 }
 
 func newAuth(store *Store, mail *Mailer) *Auth {

@@ -22,6 +22,7 @@ type Participant struct {
 	Name    string `json:"name"`
 	Role    string `json:"role"`
 	Sharing string `json:"sharing,omitempty"`
+	Avatar  string `json:"avatar,omitempty"` // account photo URL, if any
 }
 
 // ChatMessage is one line in the room chat. The server stamps the author.
@@ -41,7 +42,7 @@ type ChatMessage struct {
 func (r *Room) participants() []Participant {
 	list := make([]Participant, 0, len(r.viewers)+1)
 	if r.host != nil {
-		list = append(list, Participant{ID: r.host.id, Name: r.host.name, Role: roleHost, Sharing: r.host.sharing})
+		list = append(list, Participant{ID: r.host.id, Name: r.host.name, Role: roleHost, Sharing: r.host.sharing, Avatar: r.host.avatar})
 	}
 	viewers := make([]*Client, 0, len(r.viewers))
 	for _, v := range r.viewers {
@@ -49,7 +50,19 @@ func (r *Room) participants() []Participant {
 	}
 	sort.Slice(viewers, func(i, j int) bool { return viewers[i].joinedAt.Before(viewers[j].joinedAt) })
 	for _, v := range viewers {
-		list = append(list, Participant{ID: v.id, Name: v.name, Role: roleViewer})
+		list = append(list, Participant{ID: v.id, Name: v.name, Role: roleViewer, Avatar: v.avatar})
+	}
+	return list
+}
+
+// members is the host (if any) and every viewer. Caller holds Hub.mu.
+func (r *Room) members() []*Client {
+	list := make([]*Client, 0, len(r.viewers)+1)
+	if r.host != nil {
+		list = append(list, r.host)
+	}
+	for _, v := range r.viewers {
+		list = append(list, v)
 	}
 	return list
 }

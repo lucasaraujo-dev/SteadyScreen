@@ -10,6 +10,8 @@ export type Participant = {
   name: string;
   role: "host" | "viewer";
   sharing?: Sharing;
+  /** Account photo URL; without one the initials show. */
+  avatar?: string;
 };
 
 export type ChatMessage = {

@@ -53,6 +53,9 @@ func (a *Auth) sendUser(w http.ResponseWriter, r *http.Request, id int64) {
 		serverError(w, "reading account", err)
 		return
 	}
+	if a.onChange != nil {
+		a.onChange(u)
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"user": u})
 }
 

@@ -39,7 +39,8 @@ type Client struct {
 	role string
 	room *Room // set by Hub.join, guarded by Hub.mu
 
-	userID int64 // logged-in account, 0 for guests
+	userID int64  // logged-in account, 0 for guests
+	avatar string // that account's photo URL, "" without one
 
 	// Guarded by Hub.mu.
 	name     string

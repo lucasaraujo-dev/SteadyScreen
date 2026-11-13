@@ -61,10 +61,20 @@ export default function Participants({
             return (
               <li key={p.id} className="person" title={p.name}>
                 <span
-                  className={`avatar${p.role === "host" ? " is-host" : ""}${isSelf ? " is-self" : ""}`}
+                  className={`avatar${p.role === "host" ? " is-host" : ""}${isSelf ? " is-self" : ""}${p.avatar ? " has-photo" : ""}`}
                   aria-hidden
                 >
-                  {initials(p.name)}
+                  {p.avatar ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- tiny photo from our own API
+                    <img
+                      className="avatar-photo"
+                      src={p.avatar}
+                      alt=""
+                      draggable={false}
+                    />
+                  ) : (
+                    initials(p.name)
+                  )}
                   {dot && <span className={`avatar-dot ${dot}`} />}
                 </span>
                 <span className="person-main">
