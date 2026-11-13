@@ -455,6 +455,10 @@
   overflow-x: hidden;
   scrollbar-width: none;
   list-style: none;
+  /* Room around the avatars so the sharing ring (outside the avatar) isn't
+     cut off; the negative margin keeps everything where it was. */
+  margin: -6px;
+  padding: 6px;
 }
 
 .person {
@@ -525,8 +529,53 @@
   border-radius: 50%;
 }
 
-.avatar-dot.is-live {
-  background: var(--live);
+/* Sharing the screen or camera: a thin blue ring around the avatar with a
+   bright streak that keeps running around it. */
+.avatar-ring {
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.avatar-ring::before,
+.avatar-ring::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px));
+}
+
+/* The ring itself. */
+.avatar-ring::before {
+  background: rgba(59, 130, 246, 0.55);
+}
+
+/* The streak: a short bright tail that turns forever. */
+.avatar-ring::after {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg 250deg,
+    rgba(96, 165, 250, 0.6) 300deg,
+    #bfdbfe 345deg,
+    #fff 360deg
+  );
+  filter: drop-shadow(0 0 3px rgba(96, 165, 250, 0.9));
+  animation: avatar-ring-run 1.4s linear infinite;
+}
+
+@keyframes avatar-ring-run {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .avatar-ring::after {
+    animation-duration: 4s;
+  }
 }
 
 .avatar-dot.is-watching {

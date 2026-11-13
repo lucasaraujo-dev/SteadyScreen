@@ -75,7 +75,12 @@ export default function Participants({
                   ) : (
                     initials(p.name)
                   )}
-                  {dot && <span className={`avatar-dot ${dot}`} />}
+                  {dot === "is-live" ? (
+                    // Sharing: a thin blue ring with a light running around it.
+                    <span className="avatar-ring" />
+                  ) : (
+                    dot && <span className={`avatar-dot ${dot}`} />
+                  )}
                 </span>
                 <span className="person-main">
                   <span className="person-name">
