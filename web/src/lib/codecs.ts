@@ -65,6 +65,15 @@ export async function preferredFormats(): Promise<Format[]> {
   return (await check()).order;
 }
 
+/** Every format in the order we offer it, and whether the card encodes it. */
+export async function formatPlan(): Promise<VideoFormat[]> {
+  const { order, hardware } = await check();
+  return order.map((f) => ({
+    name: FORMAT_NAMES[f],
+    onCard: hardware.includes(f),
+  }));
+}
+
 /** Friendly names of the formats this computer's graphics card encodes. */
 export async function cardFormats(): Promise<string[]> {
   return (await check()).hardware.map((f) => FORMAT_NAMES[f]);

@@ -1,8 +1,15 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CloseIcon } from "@/components/icons";
-import { cardFormats, type VideoFormat } from "@/lib/codecs";
+import {
+  BoltIcon,
+  CheckIcon,
+  CloseIcon,
+  FilmIcon,
+  GearIcon,
+  NoteIcon,
+} from "@/components/icons";
+import { formatPlan, type VideoFormat } from "@/lib/codecs";
 import type { Quality } from "@/lib/host";
 
 type Props = {
@@ -13,6 +20,26 @@ type Props = {
   /** The video formats going out right now (one per viewer). */
   getFormats: () => Promise<VideoFormat[]>;
 };
+
+const QUALITIES: {
+  id: Quality;
+  title: string;
+  hint: string;
+  Icon: (p: { size?: number }) => React.ReactNode;
+}[] = [
+  {
+    id: "detail",
+    title: "Texto nítido",
+    hint: "Código, slides e documentos",
+    Icon: NoteIcon,
+  },
+  {
+    id: "motion",
+    title: "Movimento suave",
+    hint: "Vídeos e jogos",
+    Icon: FilmIcon,
+  },
+];
 
 /** Host settings in a native modal dialog. Changes apply right away. Your
  * name comes from your account, so it isn't set here. */
@@ -35,14 +62,20 @@ export default function Settings({
   return (
     <dialog
       ref={ref}
-      className="settings glass"
+      className="settings"
       onClose={onClose}
       onClick={(e) => e.target === e.currentTarget && onClose()} // click on the backdrop
     >
       {open && (
         <div className="settings-body" onClick={(e) => e.stopPropagation()}>
           <header className="settings-head">
-            <h2>Configurações</h2>
+            <span className="settings-badge">
+              <GearIcon size={20} />
+            </span>
+            <div className="settings-title">
+              <h2>Configurações</h2>
+              <p>Muda na hora para quem está assistindo.</p>
+            </div>
             <button
               type="button"
               className="icon-btn"
@@ -53,29 +86,32 @@ export default function Settings({
             </button>
           </header>
 
-          <div className="settings-field">
-            <span>Qualidade da transmissão</span>
-            <div className="segmented">
-              <button
-                type="button"
-                className="btn"
-                aria-pressed={quality === "detail"}
-                onClick={() => onQuality("detail")}
-              >
-                Texto nítido
-                <small>código, slides, documentos</small>
-              </button>
-              <button
-                type="button"
-                className="btn"
-                aria-pressed={quality === "motion"}
-                onClick={() => onQuality("motion")}
-              >
-                Movimento suave
-                <small>vídeos e jogos</small>
-              </button>
+          <section className="settings-section">
+            <h3>Qualidade da transmissão</h3>
+            <div className="quality-options" role="radiogroup">
+              {QUALITIES.map(({ id, title, hint, Icon }) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="radio"
+                  aria-checked={quality === id}
+                  className="quality-option"
+                  onClick={() => onQuality(id)}
+                >
+                  <span className="quality-icon">
+                    <Icon size={20} />
+                  </span>
+                  <span className="quality-text">
+                    <strong>{title}</strong>
+                    <small>{hint}</small>
+                  </span>
+                  <span className="quality-check" aria-hidden>
+                    <CheckIcon size={12} />
+                  </span>
+                </button>
+              ))}
             </div>
-          </div>
+          </section>
 
           <VideoFormats getFormats={getFormats} />
         </div>
@@ -84,19 +120,20 @@ export default function Settings({
   );
 }
 
-/** Which format the video goes out in, and whether the graphics card does
- * the work. Refreshed every few seconds while the panel is open. */
+/** Which formats this computer sends, in order, and whether the graphics
+ * card does the work. What each viewer gets right now is refreshed every
+ * couple of seconds while the panel is open. */
 function VideoFormats({
   getFormats,
 }: {
   getFormats: () => Promise<VideoFormat[]>;
 }) {
-  const [card, setCard] = useState<string[] | null>(null);
+  const [plan, setPlan] = useState<VideoFormat[] | null>(null);
   const [live, setLive] = useState<VideoFormat[]>([]);
 
   useEffect(() => {
     let alive = true;
-    void cardFormats().then((f) => alive && setCard(f));
+    void formatPlan().then((f) => alive && setPlan(f));
     const read = () =>
       void getFormats()
         .then((f) => alive && setLive(f))
@@ -109,39 +146,59 @@ function VideoFormats({
     };
   }, [getFormats]);
 
-  return (
-    <div className="settings-field">
-      <span>Formato do vídeo</span>
-      {live.length > 0 ? (
-        <ul className="format-list">
-          {live.map((f) => (
-            <li key={`${f.name}|${f.onCard}`}>
-              <strong>{f.name}</strong>
-              <em className={f.onCard ? "is-card" : undefined}>
-                {f.onCard ? "placa de vídeo" : "processador"}
-              </em>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="format-note">
-          Aparece aqui quando alguém estiver assistindo.
-        </p>
-      )}
-      <p className="format-note">
-        {card === null
-          ? "Verificando a placa de vídeo…"
-          : card.length > 0
-            ? `Sua placa de vídeo comprime ${list(card)}. ${card.length > 1 ? "Esses formatos vêm" : "Esse formato vem"} primeiro.`
-            : "O navegador não usa a placa de vídeo aqui; o vídeo sai em H.264 pelo processador."}
-      </p>
-    </div>
-  );
-}
+  const onCard = plan?.filter((f) => f.onCard).length ?? 0;
+  const liveNames = new Set(live.map((f) => f.name));
 
-/** "A", "A e B", "A, B e C". */
-function list(items: string[]): string {
-  return items.length < 2
-    ? (items[0] ?? "")
-    : `${items.slice(0, -1).join(", ")} e ${items.at(-1)}`;
+  return (
+    <section className="settings-section">
+      <h3>Formato do vídeo</h3>
+      <div className="format-box">
+        <div className="format-status">
+          <span className={`format-chip${onCard ? " is-card" : ""}`}>
+            <BoltIcon size={14} />
+            {plan === null
+              ? "Verificando…"
+              : onCard
+                ? "Placa de vídeo ativa"
+                : "Só o processador"}
+          </span>
+          <span className="format-live">
+            {live.length === 0
+              ? "Ninguém assistindo"
+              : live.length === 1
+                ? "1 pessoa recebendo"
+                : `${live.length} pessoas recebendo`}
+          </span>
+        </div>
+
+        {plan && (
+          <ol className="format-order">
+            {plan.map((f, i) => (
+              <li
+                key={f.name}
+                className={liveNames.has(f.name) ? "is-live" : undefined}
+              >
+                <span className="format-rank">{i + 1}</span>
+                <strong>{f.name}</strong>
+                {liveNames.has(f.name) && (
+                  <span className="format-now">em uso</span>
+                )}
+                <em className={f.onCard ? "is-card" : undefined}>
+                  {f.onCard ? "placa de vídeo" : "processador"}
+                </em>
+              </li>
+            ))}
+          </ol>
+        )}
+
+        <p className="format-note">
+          {plan === null
+            ? "Vendo o que a sua placa de vídeo consegue fazer."
+            : onCard
+              ? "Os formatos da placa de vídeo vão primeiro: imagem melhor e o computador fica mais leve. Quem assiste recebe o primeiro que o navegador dele aceita."
+              : "O navegador não usa a placa de vídeo aqui, então o vídeo sai pelo processador no formato mais leve."}
+        </p>
+      </div>
+    </section>
+  );
 }

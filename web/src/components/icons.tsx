@@ -165,3 +165,6 @@ export const LogOutIcon = (p: P) => <Img name="sair" {...p} />;
 export const ArrowRightIcon = (p: P) => <Img name="seta-direita" {...p} />;
 
 export const ArrowLeftIcon = (p: P) => <Img name="seta-esquerda" {...p} />;
+export const NoteIcon = (p: P) => <Img name="nota" {...p} />;
+export const FilmIcon = (p: P) => <Img name="filme" {...p} />;
+export const BoltIcon = (p: P) => <Img name="raio" {...p} />;
