@@ -33,8 +33,14 @@ export function errorText(reason: string): string {
       return "Código errado. Confira o e-mail e tente de novo.";
     case "code-expired":
       return "Esse código venceu. Peça um novo.";
-    case "bad-phone":
-      return "Esse número não parece certo. Use DDD e número, ou +código do país.";
+    case "link-expired":
+      return "Esse QR code venceu. Gere um novo no computador.";
+    case "link-used":
+      return "Esse QR code já foi lido por outro celular. Gere um novo no computador.";
+    case "link-denied":
+      return "O computador recusou a entrada deste celular.";
+    case "link-not-scanned":
+      return "Nenhum celular leu o QR code ainda.";
     case "avatar-too-big":
       return "Essa imagem é grande demais. Tente outra.";
     case "bad-image":

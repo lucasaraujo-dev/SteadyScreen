@@ -34,6 +34,8 @@ type Auth struct {
 	store       *Store
 	limiter     *limiter // password guesses per address
 	codeLimiter *limiter // confirmation emails per account
+	linkLimiter *limiter // QR codes per account
+	links       *links   // QR codes waiting for a phone
 	mail        *Mailer
 	// onChange runs after someone's name or photo changes (rooms show it live).
 	onChange func(User)
@@ -44,6 +46,8 @@ func newAuth(store *Store, mail *Mailer) *Auth {
 		store:       store,
 		limiter:     newLimiter(10, time.Minute),
 		codeLimiter: newLimiter(3, 10*time.Minute),
+		linkLimiter: newLimiter(10, 10*time.Minute),
+		links:       newLinks(),
 		mail:        mail,
 	}
 	go func() {
@@ -62,6 +66,7 @@ func (a *Auth) routes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/auth/logout", a.logout)
 	mux.HandleFunc("GET /api/me", a.me)
 	a.accountRoutes(mux)
+	a.linkRoutes(mux)
 }
 
 // currentUser returns the logged-in account, if any.
@@ -166,6 +171,11 @@ func (a *Auth) startSession(w http.ResponseWriter, r *http.Request, u User, stat
 		writeError(w, http.StatusInternalServerError, "server-error")
 		return
 	}
+	setSessionCookie(w, r, token)
+	writeJSON(w, status, map[string]any{"user": u})
+}
+
+func setSessionCookie(w http.ResponseWriter, r *http.Request, token string) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     sessionCookie,
 		Value:    token,
@@ -175,7 +185,6 @@ func (a *Auth) startSession(w http.ResponseWriter, r *http.Request, u User, stat
 		Secure:   isHTTPS(r),
 		SameSite: http.SameSiteLaxMode, // other sites can't post with it
 	})
-	writeJSON(w, status, map[string]any{"user": u})
 }
 
 func (a *Auth) logout(w http.ResponseWriter, r *http.Request) {

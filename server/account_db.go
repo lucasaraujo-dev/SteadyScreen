@@ -48,11 +48,6 @@ func (s *Store) updateEmail(ctx context.Context, id int64, email string) error {
 	return err
 }
 
-func (s *Store) updatePhone(ctx context.Context, id int64, phone string) error {
-	_, err := s.db.Exec(ctx, `UPDATE users SET phone = $2 WHERE id = $1`, id, phone)
-	return err
-}
-
 // saveEmailCode remembers the code sent to `email` (replacing any older one).
 func (s *Store) saveEmailCode(ctx context.Context, id int64, email string, codeHash []byte, ttl time.Duration) error {
 	_, err := s.db.Exec(ctx,

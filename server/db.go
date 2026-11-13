@@ -68,6 +68,10 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar         BYTEA;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_type    TEXT    NOT NULL DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_version INT     NOT NULL DEFAULT 0;
 
+-- Phones logged in with the QR code show up as "linked" (device = its name).
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS id     BIGSERIAL;
+ALTER TABLE sessions ADD COLUMN IF NOT EXISTS device TEXT NOT NULL DEFAULT '';
+
 -- The code mailed to confirm an email address (only its hash is kept).
 CREATE TABLE IF NOT EXISTS email_codes (
 	user_id    BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -110,18 +114,17 @@ type User struct {
 	Name          string    `json:"name"`
 	Email         string    `json:"email"`
 	EmailVerified bool      `json:"emailVerified"`
-	Phone         string    `json:"phone"`
 	AvatarURL     string    `json:"avatarUrl"` // "" when there's no photo
 	CreatedAt     time.Time `json:"createdAt"`
 }
 
 // userCols is what every account query reads, in scanUser's order.
-const userCols = `u.id, u.name, u.email, u.email_verified, u.phone, u.avatar_version, u.created_at`
+const userCols = `u.id, u.name, u.email, u.email_verified, u.avatar_version, u.created_at`
 
 func scanUser(row pgx.Row, extra ...any) (User, error) {
 	var u User
 	var avatarVersion int
-	err := row.Scan(append([]any{&u.ID, &u.Name, &u.Email, &u.EmailVerified, &u.Phone, &avatarVersion, &u.CreatedAt}, extra...)...)
+	err := row.Scan(append([]any{&u.ID, &u.Name, &u.Email, &u.EmailVerified, &avatarVersion, &u.CreatedAt}, extra...)...)
 	if avatarVersion > 0 {
 		// The version changes with each new photo, so browsers can cache forever.
 		u.AvatarURL = "/api/avatars/" + strconv.FormatInt(u.ID, 10) + "?v=" + strconv.Itoa(avatarVersion)
@@ -174,11 +177,49 @@ func tokenHash(token string) []byte {
 }
 
 func (s *Store) createSession(ctx context.Context, userID int64, ttl time.Duration) (string, error) {
+	return s.createDeviceSession(ctx, userID, ttl, "")
+}
+
+// createDeviceSession is a login for a phone linked with the QR code; `device`
+// ("iPhone · Safari") is how it's listed in the account settings.
+func (s *Store) createDeviceSession(ctx context.Context, userID int64, ttl time.Duration, device string) (string, error) {
 	token := randomHex(32)
 	_, err := s.db.Exec(ctx,
-		`INSERT INTO sessions (token_hash, user_id, expires_at) VALUES ($1, $2, $3)`,
-		tokenHash(token), userID, time.Now().Add(ttl))
+		`INSERT INTO sessions (token_hash, user_id, expires_at, device) VALUES ($1, $2, $3, $4)`,
+		tokenHash(token), userID, time.Now().Add(ttl), device)
 	return token, err
+}
+
+// Device is a phone linked to an account.
+type Device struct {
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+func (s *Store) devices(ctx context.Context, userID int64) ([]Device, error) {
+	rows, err := s.db.Query(ctx,
+		`SELECT id, device, created_at FROM sessions
+		  WHERE user_id = $1 AND device <> '' AND expires_at > now()
+		  ORDER BY created_at DESC`, userID)
+	if err != nil {
+		return nil, err
+	}
+	return pgx.CollectRows(rows, func(row pgx.CollectableRow) (Device, error) {
+		var d Device
+		err := row.Scan(&d.ID, &d.Name, &d.CreatedAt)
+		return d, err
+	})
+}
+
+// deleteDevice unlinks a phone: its login stops working at once.
+func (s *Store) deleteDevice(ctx context.Context, userID, id int64) error {
+	tag, err := s.db.Exec(ctx,
+		`DELETE FROM sessions WHERE user_id = $1 AND id = $2 AND device <> ''`, userID, id)
+	if err == nil && tag.RowsAffected() == 0 {
+		return errNotFound
+	}
+	return err
 }
 
 func (s *Store) userBySession(ctx context.Context, token string) (User, error) {

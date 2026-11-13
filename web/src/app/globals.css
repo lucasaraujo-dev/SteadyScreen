@@ -2207,3 +2207,158 @@ dialog.account-settings::backdrop {
     flex-wrap: wrap;
   }
 }
+
+/* ---------- linked phones (AccountSettings PhoneRow) ---------- */
+
+.acs-devices {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: -4px 12px 12px 62px;
+  list-style: none;
+}
+
+.acs-devices li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 6px 8px 12px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.04);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.acs-devices li > span {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.acs-devices small {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 500;
+}
+
+.acs-pad {
+  padding: 0 14px 12px;
+}
+
+.acs-qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.acs-qr .acs-buttons {
+  align-self: stretch;
+}
+
+.acs-qr-img {
+  width: 220px;
+  height: 220px;
+  padding: 10px;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.12),
+    inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+  image-rendering: pixelated;
+  pointer-events: none;
+  animation: acs-qr-in 0.5s var(--spring);
+}
+
+@keyframes acs-qr-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+.acs-qr-ask {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 8px 4px;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  animation: acs-open 0.4s var(--spring);
+}
+
+.acs-qr-phone {
+  display: grid;
+  place-items: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 20px;
+  background: #111214;
+  color: #fff;
+  animation: acs-qr-buzz 1.6s ease-in-out infinite;
+}
+
+@keyframes acs-qr-buzz {
+  0%,
+  70%,
+  100% {
+    transform: rotate(0);
+  }
+  76% {
+    transform: rotate(-8deg);
+  }
+  82% {
+    transform: rotate(8deg);
+  }
+  88% {
+    transform: rotate(-5deg);
+  }
+  94% {
+    transform: rotate(4deg);
+  }
+}
+
+.acs-qr-spin {
+  width: 34px;
+  height: 34px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #111214;
+  border-radius: 50%;
+  animation: avatar-spin 0.8s linear infinite;
+}
+
+/* ---------- the page the phone opens (components/LinkPhone.tsx) ---------- */
+
+.link-phone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 420px;
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.link-phone h1 {
+  font-size: 1.5rem;
+}
+
+.link-phone-icon {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #eef0f4;
+}
+
+.link-phone-icon.is-ok {
+  background: rgba(47, 210, 122, 0.18);
+  color: #2fd27a;
+  animation: acs-qr-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}

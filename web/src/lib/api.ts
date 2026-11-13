@@ -13,7 +13,6 @@ export type User = {
   name: string;
   email: string;
   emailVerified: boolean;
-  phone: string;
   /** "" when there's no photo. */
   avatarUrl: string;
   createdAt: string;
@@ -105,8 +104,6 @@ export const changeEmail = (email: string, password: string) =>
 export const sendEmailCode = () => post<void>("/api/me/email/code");
 export const confirmEmail = (code: string) =>
   post<Me>("/api/me/email/confirm", { code });
-export const changePhone = (phone: string) =>
-  post<Me>("/api/me/phone", { phone });
 export const uploadAvatar = (photo: Blob) =>
   request<Me>("/api/me/avatar", {
     method: "PUT",
@@ -115,6 +112,35 @@ export const uploadAvatar = (photo: Blob) =>
   });
 export const removeAvatar = () =>
   post<Me>("/api/me/avatar", undefined, "DELETE");
+
+// Linking a phone with a QR code (server/link.go explains the steps).
+export type LinkState =
+  "waiting" | "scanned" | "approved" | "done" | "denied" | "expired";
+/** A phone logged in to the account through the QR code. */
+export type Device = { id: number; name: string; createdAt: string };
+
+export const startLink = () =>
+  post<{ code: string; expiresIn: number }>("/api/me/link");
+export const linkStatus = (code: string) =>
+  request<{ state: LinkState; device: string }>(
+    `/api/me/link/${encodeURIComponent(code)}`,
+  );
+export const answerLink = (code: string, allow: boolean) =>
+  post<void>(
+    `/api/me/link/${encodeURIComponent(code)}/${allow ? "approve" : "deny"}`,
+  );
+export const scanLink = (code: string) =>
+  post<{ secret: string }>("/api/link/scan", { code });
+/** Answers `{ user }` once the computer allowed it, `{ state }` until then. */
+export const finishLink = (code: string, secret: string) =>
+  post<{ user?: User; state?: LinkState }>("/api/link/finish", {
+    code,
+    secret,
+  });
+export const getDevices = () =>
+  request<{ devices: Device[] }>("/api/me/devices");
+export const removeDevice = (id: number) =>
+  post<void>(`/api/me/devices/${id}`, undefined, "DELETE");
 
 const tokenKey = (roomId: string) => `steadyscreen:host:${roomId}`;
 

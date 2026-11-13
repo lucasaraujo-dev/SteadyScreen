@@ -29,7 +29,6 @@ func (a *Auth) accountRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/me/email", a.loggedIn(a.changeEmail))
 	mux.HandleFunc("POST /api/me/email/code", a.loggedIn(a.sendEmailCode))
 	mux.HandleFunc("POST /api/me/email/confirm", a.loggedIn(a.confirmEmail))
-	mux.HandleFunc("POST /api/me/phone", a.loggedIn(a.changePhone))
 	mux.HandleFunc("PUT /api/me/avatar", a.loggedIn(a.uploadAvatar))
 	mux.HandleFunc("DELETE /api/me/avatar", a.loggedIn(a.removeAvatar))
 	mux.HandleFunc("GET /api/avatars/{id}", a.serveAvatar)
@@ -214,25 +213,6 @@ func (a *Auth) confirmEmail(w http.ResponseWriter, r *http.Request, u User) {
 	}
 }
 
-func (a *Auth) changePhone(w http.ResponseWriter, r *http.Request, u User) {
-	var in struct {
-		Phone string `json:"phone"`
-	}
-	if !readJSON(w, r, &in) {
-		return
-	}
-	phone, ok := cleanPhone(in.Phone)
-	if !ok {
-		writeError(w, http.StatusBadRequest, "bad-phone")
-		return
-	}
-	if err := a.store.updatePhone(r.Context(), u.ID, phone); err != nil {
-		serverError(w, "changing phone", err)
-		return
-	}
-	a.sendUser(w, r, u.ID)
-}
-
 // uploadAvatar takes the photo as the raw request body (JPEG, PNG or WebP).
 func (a *Auth) uploadAvatar(w http.ResponseWriter, r *http.Request, u User) {
 	data, err := io.ReadAll(http.MaxBytesReader(w, r.Body, maxAvatarSize+1))
@@ -299,32 +279,4 @@ func randomCode() string {
 func codeHash(userID int64, code string) []byte {
 	h := sha256.Sum256([]byte(strconv.FormatInt(userID, 10) + ":" + code))
 	return h[:]
-}
-
-// cleanPhone keeps "+" and digits. Numbers typed without a country code are
-// taken as Brazilian. "" removes the phone.
-func cleanPhone(s string) (string, bool) {
-	var b strings.Builder
-	for i, r := range strings.TrimSpace(s) {
-		switch {
-		case r >= '0' && r <= '9':
-			b.WriteRune(r)
-		case r == '+' && i == 0:
-			b.WriteRune(r)
-		case r == ' ' || r == '-' || r == '(' || r == ')' || r == '.':
-		default:
-			return "", false
-		}
-	}
-	p := b.String()
-	if p == "" {
-		return "", true
-	}
-	if !strings.HasPrefix(p, "+") {
-		p = "+55" + strings.TrimLeft(p, "0")
-	}
-	if n := len(p) - 1; n < 10 || n > 15 {
-		return "", false
-	}
-	return p, true
 }

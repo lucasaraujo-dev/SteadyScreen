@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import QRCode from "qrcode";
 import AvatarButton from "@/components/AvatarButton";
 import Modal from "@/components/Modal";
 import {
@@ -18,17 +19,23 @@ import {
   ApiError,
   changeEmail,
   changeName,
+  answerLink,
   changePassword,
-  changePhone,
   confirmEmail,
+  getDevices,
+  linkStatus,
   removeAvatar,
+  removeDevice,
   sendEmailCode,
+  startLink,
+  type Device,
+  type LinkState,
   type User,
 } from "@/lib/api";
 import { errorText } from "@/lib/messages";
 
 /** Which row is open for editing. "code" = typing the emailed code. */
-type Editing = "name" | "email" | "code" | "password" | "phone" | null;
+type Editing = "name" | "email" | "code" | "password" | null;
 
 /** "Configurações da conta": name, email (and confirming it), password,
  * phone and photo. Every change is saved on the server right away. */
@@ -47,7 +54,10 @@ export default function AccountSettings({
   const [toast, setToast] = useState<{ text: string; ok: boolean } | null>(
     null,
   );
-  const tell = (text: string, ok = true) => setToast({ text, ok });
+  const tell = useCallback(
+    (text: string, ok = true) => setToast({ text, ok }),
+    [],
+  );
 
   function edit(row: Editing) {
     setEditing(row);
@@ -283,43 +293,7 @@ export default function AccountSettings({
               </Form>
             </Row>
 
-            <Row
-              {...rowProps}
-              id="phone"
-              icon={<PhoneIcon size={18} />}
-              label="Celular"
-              value={user.phone ? formatPhone(user.phone) : "Nenhum vinculado"}
-              muted={!user.phone}
-              action={user.phone ? "Alterar" : "Vincular"}
-            >
-              <Form
-                busy={busy}
-                error={error}
-                submit="Salvar celular"
-                onCancel={() => edit(null)}
-                onSubmit={(f) =>
-                  run(
-                    () => changePhone(f.get("phone")),
-                    f.get("phone").trim()
-                      ? "Celular vinculado"
-                      : "Celular removido",
-                  )
-                }
-              >
-                <Field
-                  name="phone"
-                  label="Celular com DDD"
-                  type="tel"
-                  autoComplete="tel"
-                  defaultValue={user.phone}
-                  placeholder="(11) 91234-5678"
-                  required={false}
-                />
-                <p className="acs-hint">
-                  Deixe vazio e salve para desvincular.
-                </p>
-              </Form>
-            </Row>
+            <PhoneRow open={open} tell={tell} />
 
             <li className="acs-row">
               <div className="acs-line">
@@ -485,8 +459,276 @@ function Field({
   );
 }
 
-/** +5511912345678 → (11) 91234-5678; other countries stay as they are. */
-function formatPhone(p: string): string {
-  const m = /^\+55(\d{2})(\d{4,5})(\d{4})$/.exec(p);
-  return m ? `(${m[1]}) ${m[2]}-${m[3]}` : p;
+type Linking = { code: string; qr: string; state: LinkState; device: string };
+
+/** "Celular": phones linked with a QR code. The computer shows the code, the
+ * phone scans it, and the computer allows it in (see server/link.go). */
+function PhoneRow({
+  open,
+  tell,
+}: {
+  open: boolean;
+  tell: (text: string, ok?: boolean) => void;
+}) {
+  const [devices, setDevices] = useState<Device[] | null>(null);
+  const [linking, setLinking] = useState<Linking | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(() => {
+    getDevices()
+      .then((r) => setDevices(r.devices))
+      .catch(() => setDevices([]));
+  }, []);
+
+  useEffect(() => {
+    if (open) load();
+  }, [open, load]);
+
+  const fail = (err: unknown) =>
+    setError(
+      errorText(err instanceof ApiError ? err.message : "server-offline"),
+    );
+
+  async function begin() {
+    setBusy(true);
+    setError(null);
+    try {
+      const { code } = await startLink();
+      // The code goes after "#", so it never reaches server logs.
+      const url = `${window.location.origin}/vincular#${code}`;
+      const qr = await QRCode.toDataURL(url, {
+        width: 440,
+        margin: 1,
+        color: { dark: "#111214", light: "#ffffff" },
+      });
+      setLinking({ code, qr, state: "waiting", device: "" });
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Watch the code until a phone scans it and gets in.
+  const code = linking?.code;
+  const state = linking?.state;
+  useEffect(() => {
+    if (
+      !code ||
+      (state !== "waiting" && state !== "scanned" && state !== "approved")
+    )
+      return;
+    const timer = setInterval(() => {
+      linkStatus(code)
+        .then((r) => {
+          if (r.state === "done") {
+            setLinking(null);
+            tell(`${r.device || "Celular"} vinculado`);
+            load();
+          } else {
+            setLinking((l) =>
+              l && l.code === code
+                ? { ...l, state: r.state, device: r.device }
+                : l,
+            );
+          }
+        })
+        .catch(() => {});
+    }, 1500);
+    return () => clearInterval(timer);
+  }, [code, state, tell, load]);
+
+  async function answer(allow: boolean) {
+    if (!linking) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await answerLink(linking.code, allow);
+      if (allow) setLinking({ ...linking, state: "approved" });
+      else {
+        setLinking(null);
+        tell("Entrada recusada", false);
+      }
+    } catch (err) {
+      fail(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function unlink(d: Device) {
+    setBusy(true);
+    try {
+      await removeDevice(d.id);
+      tell(`${d.name} desvinculado`);
+      load();
+    } catch (err) {
+      tell(
+        errorText(err instanceof ApiError ? err.message : "server-offline"),
+        false,
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const has = !!devices?.length;
+  const local =
+    typeof window !== "undefined" &&
+    /\/\/(localhost|127\.0\.0\.1)/.test(window.location.origin);
+
+  return (
+    <li className={`acs-row${linking ? " is-open" : ""}`}>
+      <div className="acs-line">
+        <span className="acs-icon">
+          <PhoneIcon size={18} />
+        </span>
+        <div className="acs-text">
+          <span className="acs-label">
+            Celular
+            {has && (
+              <span className="acs-badge is-ok">
+                <VerifiedIcon size={13} /> Vinculado
+              </span>
+            )}
+          </span>
+          <span className={`acs-value${has ? "" : " is-muted"}`}>
+            {devices === null
+              ? "Carregando…"
+              : has
+                ? devices.length === 1
+                  ? devices[0].name
+                  : `${devices.length} celulares`
+                : "Nenhum vinculado"}
+          </span>
+        </div>
+        {!linking && (
+          <button
+            type="button"
+            className="acs-action"
+            disabled={busy}
+            onClick={() => void begin()}
+          >
+            {has ? "Vincular outro" : "Vincular"}
+          </button>
+        )}
+      </div>
+
+      {has && !linking && (
+        <ul className="acs-devices">
+          {devices.map((d) => (
+            <li key={d.id}>
+              <span>
+                {d.name}
+                <small>
+                  desde {new Date(d.createdAt).toLocaleDateString("pt-BR")}
+                </small>
+              </span>
+              <button
+                type="button"
+                className="acs-link"
+                disabled={busy}
+                onClick={() => void unlink(d)}
+              >
+                Desvincular
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {error && !linking && <p className="acs-error acs-pad">{error}</p>}
+
+      {linking && (
+        <div className="acs-form-wrap acs-qr">
+          {linking.state === "waiting" && (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element -- generated QR image */}
+              <img
+                className="acs-qr-img"
+                src={linking.qr}
+                alt="QR code para vincular o celular"
+                draggable={false}
+              />
+              <p className="acs-hint">
+                Abra a câmera do celular e aponte para o código. O celular entra
+                na sua conta sem digitar a senha. O código vale por 3 minutos.
+              </p>
+              {local && (
+                <p className="acs-hint">
+                  Você está em <strong>localhost</strong>: o celular não
+                  consegue abrir esse endereço. Teste pelo site no ar.
+                </p>
+              )}
+            </>
+          )}
+          {linking.state === "scanned" && (
+            <div className="acs-qr-ask">
+              <span className="acs-qr-phone">
+                <PhoneIcon size={26} />
+              </span>
+              <p>
+                <strong>{linking.device || "Um celular"}</strong> quer entrar na
+                sua conta. Foi você que leu o código?
+              </p>
+            </div>
+          )}
+          {linking.state === "approved" && (
+            <div className="acs-qr-ask">
+              <span className="acs-qr-spin" aria-hidden />
+              <p>Entrando no celular…</p>
+            </div>
+          )}
+          {linking.state === "expired" && (
+            <p className="acs-hint">Esse QR code venceu.</p>
+          )}
+          {error && <p className="acs-error">{error}</p>}
+          <div className="acs-buttons">
+            {linking.state === "scanned" ? (
+              <>
+                <button
+                  type="button"
+                  className="acs-cancel"
+                  disabled={busy}
+                  onClick={() => void answer(false)}
+                >
+                  Recusar
+                </button>
+                <button
+                  type="button"
+                  className="acs-save"
+                  disabled={busy}
+                  onClick={() => void answer(true)}
+                >
+                  Permitir
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="acs-cancel"
+                  disabled={busy}
+                  onClick={() => setLinking(null)}
+                >
+                  Cancelar
+                </button>
+                {linking.state === "expired" && (
+                  <button
+                    type="button"
+                    className="acs-save"
+                    disabled={busy}
+                    onClick={() => void begin()}
+                  >
+                    Gerar outro
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </li>
+  );
 }
