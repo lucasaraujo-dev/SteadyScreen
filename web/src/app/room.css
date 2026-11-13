@@ -246,8 +246,15 @@
   background: #2fd27a;
 }
 
-.nav-notice.is-leave .nav-dot {
-  background: #6b7280;
+/* Who came in (green, pointing in) or left (red, pointing out). */
+.nav-arrow {
+  display: flex;
+  flex-shrink: 0;
+  color: #2fd27a;
+}
+
+.nav-notice.is-leave .nav-arrow {
+  color: #f04650;
 }
 
 .nav-notice.is-live .nav-dot {

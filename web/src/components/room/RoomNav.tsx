@@ -2,7 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BellIcon, GearIcon, HomeIcon, LockIcon } from "@/components/icons";
+import {
+  ArrowLeftIcon,
+  ArrowRightIcon,
+  BellIcon,
+  GearIcon,
+  HomeIcon,
+  LockIcon,
+} from "@/components/icons";
 import type { RoomNotice } from "@/components/room/useRoom";
 import type { Participant } from "@/lib/room";
 
@@ -151,7 +158,18 @@ function NoticeBell({
             <ul className="nav-list">
               {notices.map((n) => (
                 <li key={n.id} className={`nav-notice is-${n.kind}`}>
-                  <span className="nav-dot" aria-hidden />
+                  {n.kind === "live" ? (
+                    <span className="nav-dot" aria-hidden />
+                  ) : (
+                    // Green arrow in for who came, red arrow out for who left.
+                    <span className="nav-arrow">
+                      {n.kind === "join" ? (
+                        <ArrowRightIcon size={16} />
+                      ) : (
+                        <ArrowLeftIcon size={16} />
+                      )}
+                    </span>
+                  )}
                   <span className="nav-notice-text">{n.text}</span>
                   <time>{time.format(n.at)}</time>
                 </li>

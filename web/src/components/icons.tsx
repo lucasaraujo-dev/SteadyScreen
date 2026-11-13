@@ -163,3 +163,5 @@ export const TrashIcon = (p: P) => <Img name="lixeira" {...p} />;
 export const LogOutIcon = (p: P) => <Img name="sair" {...p} />;
 
 export const ArrowRightIcon = (p: P) => <Img name="seta-direita" {...p} />;
+
+export const ArrowLeftIcon = (p: P) => <Img name="seta-esquerda" {...p} />;
