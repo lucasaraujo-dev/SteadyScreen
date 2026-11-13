@@ -1282,6 +1282,29 @@ dialog.settings[open] {
 dialog.settings::backdrop {
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(6px);
+  animation: settings-fade 0.25s ease;
+}
+
+/* Closing: sink and fade out, the backdrop too (200ms, see Settings.tsx). */
+dialog.settings.is-closing {
+  animation: settings-out 0.2s ease-in forwards;
+}
+
+dialog.settings.is-closing::backdrop {
+  animation: settings-fade 0.2s ease-in reverse forwards;
+}
+
+@keyframes settings-out {
+  to {
+    opacity: 0;
+    transform: translateY(10px) scale(0.95);
+  }
+}
+
+@keyframes settings-fade {
+  from {
+    opacity: 0;
+  }
 }
 
 .settings-body {

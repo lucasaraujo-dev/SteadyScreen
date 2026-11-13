@@ -21,6 +21,9 @@ type Props = {
   getFormats: () => Promise<VideoFormat[]>;
 };
 
+/** Length of the closing animation (dialog.settings.is-closing in room.css). */
+const CLOSE_MS = 200;
+
 const QUALITIES: {
   id: Quality;
   title: string;
@@ -51,6 +54,8 @@ export default function Settings({
   getFormats,
 }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
+  // While true the dialog plays its closing animation, then really closes.
+  const [closing, setClosing] = useState(false);
 
   useEffect(() => {
     const dialog = ref.current;
@@ -59,12 +64,33 @@ export default function Settings({
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
+  // The parent may hand a new onClose each render; the timer must not restart.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  useEffect(() => {
+    if (!closing) return;
+    const t = window.setTimeout(() => {
+      setClosing(false);
+      onCloseRef.current();
+    }, CLOSE_MS);
+    return () => window.clearTimeout(t);
+  }, [closing]);
+
+  const close = () => setClosing(true);
+
   return (
     <dialog
       ref={ref}
-      className="settings"
+      className={`settings${closing ? " is-closing" : ""}`}
       onClose={onClose}
-      onClick={(e) => e.target === e.currentTarget && onClose()} // click on the backdrop
+      onCancel={(e) => {
+        e.preventDefault(); // Esc: animate out first
+        close();
+      }}
+      onClick={(e) => e.target === e.currentTarget && close()} // click on the backdrop
     >
       {open && (
         <div className="settings-body" onClick={(e) => e.stopPropagation()}>
@@ -79,7 +105,7 @@ export default function Settings({
             <button
               type="button"
               className="icon-btn"
-              onClick={onClose}
+              onClick={close}
               aria-label="Fechar"
             >
               <CloseIcon size={18} />
