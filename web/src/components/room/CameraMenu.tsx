@@ -1,19 +1,23 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Dropdown from "@/components/room/Dropdown";
+import { CameraIcon, PhoneIcon } from "@/components/icons";
 import PhoneRows from "@/components/room/PhoneRows";
 import type { Phone } from "@/lib/phoneBridge";
 
 type Props = {
-  /** "" = the system default webcam. */
-  cameraId: string;
-  onChange: (cameraId: string) => void;
+  /** The webcam in use right now ("" = system default), or null when none is. */
+  webcamId: string | null;
+  /** Start (or switch to) this webcam; "" = the system default. */
+  onWebcam: (deviceId: string) => void;
   /** Linked phones online, and the one whose camera is in use. */
   phones: Phone[];
   phoneId?: string;
   onPhone: (phone: Phone) => void;
-  onPhoneStop: () => void;
+  /** Turn the camera off. */
+  onStop: () => void;
+  /** Ask the phone in use to switch front / back camera. */
+  onFlip: () => void;
 };
 
 const CAMERA_KEY = "steadyscreen:camera";
@@ -39,14 +43,18 @@ async function listCameras(): Promise<MediaDeviceInfo[]> {
   return all.filter((d) => d.kind === "videoinput");
 }
 
-/** Options under the camera's arrow: which webcam, or a linked phone. */
+/**
+ * Which camera to share: this computer's webcams and the linked phones. It
+ * always opens, also with no webcam plugged in (then the phone is the way).
+ */
 export default function CameraMenu({
-  cameraId,
-  onChange,
+  webcamId,
+  onWebcam,
   phones,
   phoneId,
   onPhone,
-  onPhoneStop,
+  onStop,
+  onFlip,
 }: Props) {
   // null until the first listing comes back, so "no webcam" doesn't flash.
   const [devices, setDevices] = useState<MediaDeviceInfo[] | null>(null);
@@ -58,50 +66,88 @@ export default function CameraMenu({
         .then((list) => alive && setDevices(list))
         .catch(() => alive && setDevices([]));
     refresh();
-    navigator.mediaDevices.addEventListener("devicechange", refresh);
+    navigator.mediaDevices?.addEventListener("devicechange", refresh);
     return () => {
       alive = false;
-      navigator.mediaDevices.removeEventListener("devicechange", refresh);
+      navigator.mediaDevices?.removeEventListener("devicechange", refresh);
     };
   }, []);
 
-  // Before camera permission, browsers list webcams with an empty id: they
-  // count as "there is one", but can't be picked by name yet.
-  const list = (devices ?? []).filter((d) => d.deviceId);
-  const known = !cameraId || list.some((d) => d.deviceId === cameraId);
+  // Before camera permission, browsers list webcams with an empty id and no
+  // name: then there is just one row, the system default.
+  const named = (devices ?? []).filter((d) => d.deviceId);
+  const webcams =
+    named.length > 0
+      ? named.map((d, i) => ({
+          id: d.deviceId,
+          label: d.label || `Webcam ${i + 1}`,
+        }))
+      : devices?.length
+        ? [{ id: "", label: "Webcam do computador" }]
+        : [];
+  // The webcam in use, also when it was opened as "the default".
+  const usingId =
+    webcamId === null
+      ? null
+      : webcams.some((w) => w.id === webcamId)
+        ? webcamId
+        : (webcams[0]?.id ?? null);
 
   return (
-    <div className="mic-menu">
+    <div className="mic-menu camera-menu">
       <h3 className="menu-title">Câmera</h3>
 
-      <div className="menu-field">
-        <span>Webcam</span>
-        <Dropdown
-          label="Webcam"
-          value={known ? cameraId : ""}
-          onChange={onChange}
-          options={[
-            { value: "", label: "Padrão do sistema" },
-            ...list.map((d, i) => ({
-              value: d.deviceId,
-              label: d.label || `Webcam ${i + 1}`,
-            })),
-          ]}
-        />
-        {devices && devices.length === 0 && (
-          <small className="menu-warning">
-            Nenhuma webcam encontrada. Conecte uma e ela aparece aqui.
-          </small>
+      <div className="camera-group">
+        <span className="menu-section">Neste computador</span>
+        {devices && webcams.length === 0 && (
+          <div className="menu-row is-soon phone-row-empty">
+            <span>
+              Nenhuma webcam encontrada
+              <small>Conecte uma webcam, ou use o celular como câmera.</small>
+            </span>
+          </div>
         )}
+        {webcams.map((w) => {
+          const using = w.id === usingId;
+          return (
+            <button
+              key={w.id || "default"}
+              type="button"
+              data-pick
+              className={`menu-row phone-row${using ? " is-using" : ""}`}
+              onClick={() => (using ? onStop() : onWebcam(w.id))}
+            >
+              <span className="phone-row-name">
+                <CameraIcon size={16} />
+                {w.label}
+              </span>
+              <span className={`soon-pill${using ? " is-live" : ""}`}>
+                {using ? "Parar" : "Usar"}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
-      <PhoneRows
-        what="câmera"
-        phones={phones}
-        phoneId={phoneId}
-        onPick={onPhone}
-        onStop={onPhoneStop}
-      />
+      <div className="camera-group">
+        <span className="menu-section">Celular</span>
+        <PhoneRows
+          what="câmera"
+          phones={phones}
+          phoneId={phoneId}
+          onPick={onPhone}
+          onStop={onStop}
+        />
+        {phoneId && (
+          <button type="button" className="menu-row" onClick={onFlip}>
+            <span className="phone-row-name">
+              <PhoneIcon size={16} />
+              Virar a câmera do celular
+            </span>
+            <span className="soon-pill">Frente / trás</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }

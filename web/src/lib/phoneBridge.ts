@@ -60,6 +60,12 @@ export class PhoneBridge {
     this.end(call, false);
   }
 
+  /** Ask the phone to switch between its front and back camera. */
+  flip(phoneId: string) {
+    if (this.calls.has(key(phoneId, "camera")))
+      this.send("phone-flip", phoneId, { kind: "camera" });
+  }
+
   /** Stop whatever call delivered this stream (when sharing stops here). */
   release(stream: MediaStream | null) {
     if (!stream) return;

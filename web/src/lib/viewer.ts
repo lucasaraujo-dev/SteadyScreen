@@ -15,6 +15,8 @@ export type ViewerStatus =
 export type ViewerEvents = RoomEvents & {
   onStatus: (status: ViewerStatus, reason?: string) => void;
   onStream: (stream: MediaStream | null) => void;
+  /** The host's camera, when it is shared together with the screen. */
+  onPip?: (stream: MediaStream | null) => void;
 };
 
 export class ViewerSession {
@@ -96,7 +98,14 @@ export class ViewerSession {
     this.pc = pc;
     const stream = new MediaStream();
 
+    // Tracks arrive in the host's order: the first video is the screen (or
+    // camera); a second video is the camera shown in a corner.
     pc.ontrack = (ev) => {
+      if (ev.track.kind === "video" && stream.getVideoTracks().length) {
+        this.events.onPip?.(new MediaStream([ev.track]));
+        ev.track.addEventListener("ended", () => this.events.onPip?.(null));
+        return;
+      }
       stream.addTrack(ev.track);
       this.events.onStream(stream);
     };
@@ -151,5 +160,6 @@ export class ViewerSession {
     }
     this.pendingIce = [];
     this.events.onStream(null);
+    this.events.onPip?.(null);
   }
 }

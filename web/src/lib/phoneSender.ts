@@ -203,6 +203,10 @@ export class PhoneSender {
       case "phone-stop":
         if (call?.hostId === m.from) this.stop(kind, false);
         break;
+      case "phone-flip":
+        // The computer asked to switch between the front and back camera.
+        if (kind === "camera" && call?.hostId === m.from) void this.flip();
+        break;
     }
   }
 }

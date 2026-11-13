@@ -82,7 +82,9 @@ export default function ScreenMenu({
       </div>
 
       <div className="menu-field">
-        <span>Trocar para</span>
+        <span>
+          {current === "camera" ? "Mostrar a tela junto" : "Trocar para"}
+        </span>
         <div className="screen-choices">
           {CHOICES.map((c) => (
             <button
@@ -97,8 +99,10 @@ export default function ScreenMenu({
           ))}
         </div>
         <small className="menu-note">
-          O navegador abre a lista para você escolher qual. A sala continua
-          conectada.
+          O navegador abre a lista para você escolher qual.{" "}
+          {current === "camera"
+            ? "A câmera fica no canto da tela."
+            : "A sala continua conectada."}
         </small>
       </div>
 

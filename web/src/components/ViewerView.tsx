@@ -8,6 +8,7 @@ import Chat from "@/components/room/Chat";
 import InviteLink from "@/components/room/InviteLink";
 import Participants from "@/components/room/Participants";
 import StageToolbar, { ToolButton } from "@/components/room/StageToolbar";
+import CameraCorner from "@/components/room/CameraCorner";
 import LiveIcon from "@/components/room/LiveIcon";
 import RoomNav from "@/components/room/RoomNav";
 import { DEFAULT_SOUND, type TileSound } from "@/components/room/StreamGrid";
@@ -38,6 +39,8 @@ export default function ViewerView() {
   const [status, setStatus] = useState<ViewerStatus>("connecting");
   const [reason, setReason] = useState<string>("");
   const [hasAudio, setHasAudio] = useState(false);
+  // The host's camera, when shared together with the screen.
+  const [pip, setPip] = useState<MediaStream | null>(null);
   const [muted, setMuted] = useState(true);
   const [maxViewers, setMaxViewers] = useState(5);
   // Volume / mute of each person in the list, by participant id.
@@ -88,6 +91,7 @@ export default function ViewerView() {
             // Muted autoplay is always allowed; sound needs a click.
             if (stream) video.play().catch(() => {});
           },
+          onPip: setPip,
         });
       })
       .catch(() => {
@@ -194,9 +198,14 @@ export default function ViewerView() {
                   <>
                     <span className="badge stage-badge">
                       <LiveIcon kind={host?.sharing || "screen"} />
-                      {host?.sharing === "camera" ? "Câmera" : "Tela"} de{" "}
-                      {host?.name ?? "Anfitrião"}
+                      {pip
+                        ? "Tela e câmera"
+                        : host?.sharing === "camera"
+                          ? "Câmera"
+                          : "Tela"}{" "}
+                      de {host?.name ?? "Anfitrião"}
                     </span>
+                    {pip && <CameraCorner stream={pip} />}
                     <StageToolbar stageRef={stageRef} videoRef={videoRef}>
                       {hasAudio && (
                         <ToolButton

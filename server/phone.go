@@ -15,6 +15,7 @@ import (
 //	phone -> host:  phone-reply {kind, accepted: false}    (refused)
 //	phone -> host:  phone-offer {kind, sdp}                (accepted: WebRTC)
 //	host  -> phone: phone-answer {kind, sdp}
+//	host  -> phone: phone-flip {kind: "camera"}            (front <-> back camera)
 //	both:           phone-ice {kind, candidate}, phone-stop {kind}
 //
 // Both ends must be the same account, so nobody can reach someone else's
@@ -116,7 +117,7 @@ func (h *Hub) phoneRelay(c *Client, m Message) {
 				return
 			}
 			out.Data = mustJSON(map[string]string{"kind": in.Kind, "room": c.room.ID})
-		case "phone-answer", "phone-ice", "phone-stop":
+		case "phone-answer", "phone-ice", "phone-stop", "phone-flip":
 		default:
 			return
 		}

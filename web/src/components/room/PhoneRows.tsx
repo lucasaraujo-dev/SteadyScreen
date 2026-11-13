@@ -41,6 +41,7 @@ export default function PhoneRows({
           <button
             key={p.id}
             type="button"
+            data-pick
             className={`menu-row phone-row${using ? " is-using" : ""}`}
             onClick={() => (using ? onStop?.() : onPick(p))}
           >

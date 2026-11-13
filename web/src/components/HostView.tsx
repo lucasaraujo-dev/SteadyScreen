@@ -12,10 +12,10 @@ import {
 import {
   CameraIcon,
   EyeOffIcon,
-  PhoneIcon,
   PhoneOffIcon,
   ScreenIcon,
 } from "@/components/icons";
+import CameraCorner from "@/components/room/CameraCorner";
 import Chat from "@/components/room/Chat";
 import InviteLink from "@/components/room/InviteLink";
 import Participants from "@/components/room/Participants";
@@ -72,7 +72,10 @@ export default function HostView() {
   const sessionRef = useRef<HostSession | null>(null);
   const previewRef = useRef<HTMLVideoElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
+  // What we capture: the screen and the camera, apart. With both on, the
+  // screen fills the stage and the camera sits in a corner.
+  const screenRef = useRef<MediaStream | null>(null);
+  const camRef = useRef<MediaStream | null>(null);
   // Our microphone, captured the first time it is turned on and reused after.
   const micRef = useRef<MediaStreamTrack | null>(null);
   const micObjRef = useRef<Microphone | null>(null);
@@ -90,8 +93,10 @@ export default function HostView() {
   const [phones, setPhones] = useState<Phone[]>([]);
   const [phoneCam, setPhoneCam] = useState<Phone | null>(null);
   const [phoneMic, setPhoneMic] = useState<Phone | null>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [source, setSource] = useState<Sharing>("");
+  const [screen, setScreen] = useState<MediaStream | null>(null);
+  const [cam, setCam] = useState<MediaStream | null>(null);
+  // On the empty stage: choosing which camera.
+  const [picking, setPicking] = useState(false);
   const [quality, setQuality] = useState<Quality>("detail");
   const [output, setOutput] = useState<Output>(DEFAULT_OUTPUT);
   const [maxViewers, setMaxViewers] = useState(5);
@@ -117,6 +122,15 @@ export default function HostView() {
   const [peopleSound, setPeopleSound] = useState<Record<string, TileSound>>({});
   useRoomLock();
   const [cameraId, setCameraId] = useState<string>(loadCameraId);
+  // The big picture, and the camera in the corner when the screen is on too.
+  const stream = screen ?? cam;
+  const corner = screen ? cam : null;
+  const source: Sharing = screen ? "screen" : cam ? "camera" : "";
+  // The webcam in use (its id), or null when the camera is off or a phone's.
+  const webcamId =
+    cam && !phoneCam
+      ? (cam.getVideoTracks()[0]?.getSettings().deviceId ?? "")
+      : null;
   const [systemAudio, setSystemAudio] = useState<boolean>(loadSystemAudio);
   const [audioSettings, setAudioSettings] =
     useState<AudioSettings>(loadAudioSettings);
@@ -170,9 +184,11 @@ export default function HostView() {
 
   // Stop capturing when leaving the page.
   useEffect(
-    () => () =>
-      stream?.getTracks().forEach((t) => t !== micRef.current && t.stop()),
-    [stream],
+    () => () => {
+      for (const media of [screenRef.current, camRef.current])
+        media?.getTracks().forEach((t) => t.stop());
+    },
+    [],
   );
 
   // The mic only really sends while it is on, we are not deafened and,
@@ -222,31 +238,67 @@ export default function HostView() {
   const micLevel = useCallback(() => micObjRef.current?.level() ?? null, []);
 
   useEffect(() => {
-    streamRef.current = stream;
     if (previewRef.current) previewRef.current.srcObject = stream;
   }, [stream]);
 
-  function publish(media: MediaStream, kind: Sharing, fromPhone?: Phone) {
-    // Switching away from the phone's camera: tell the phone to stop.
-    const usedPhone = phoneCamRef.current;
-    if (usedPhone && usedPhone !== fromPhone) {
-      sessionRef.current?.phones.stop(usedPhone.id, "camera");
-      phoneCamRef.current = null;
-      setPhoneCam(null);
+  /**
+   * Tell the room what we share now: the screen (or else the camera) with
+   * its sound and our voice, plus the camera in a corner when both are on.
+   */
+  function sync() {
+    const scr = screenRef.current;
+    const camera = camRef.current;
+    const main = scr ?? camera;
+    if (!main) {
+      sessionRef.current?.setStream(null);
+      return;
     }
-    const video = media.getVideoTracks()[0];
-    video.contentHint = kind === "camera" ? "motion" : quality;
-    // The browser's own "Stop sharing" button (or unplugging the camera) ends the track.
-    video.addEventListener("ended", () => stopSharing(media));
-    // Our voice travels with whatever we share.
     const mic = micRef.current;
-    if (mic && mic.readyState === "live" && !media.getTracks().includes(mic))
-      media.addTrack(mic);
-    streamRef.current = media;
-    setStream(media);
-    setSource(kind);
-    setNotice(null);
-    sessionRef.current?.setStream(media, quality, kind);
+    const out = new MediaStream([
+      ...main.getVideoTracks(),
+      ...(scr?.getAudioTracks() ?? []),
+      ...(mic && mic.readyState === "live" ? [mic] : []),
+    ]);
+    sessionRef.current?.setStream(
+      out,
+      scr ? "screen" : "camera",
+      scr && camera ? camera : null,
+    );
+  }
+
+  function putScreen(media: MediaStream | null) {
+    const old = screenRef.current;
+    screenRef.current = media;
+    setScreen(media);
+    if (old && old !== media) old.getTracks().forEach((t) => t.stop());
+  }
+
+  /** Swap the camera in use (a webcam, a phone's, or none). */
+  function putCamera(media: MediaStream | null, phone: Phone | null = null) {
+    // Moving away from a phone's camera: tell the phone to stop.
+    const usedPhone = phoneCamRef.current;
+    if (usedPhone && usedPhone !== phone)
+      sessionRef.current?.phones.stop(usedPhone.id, "camera");
+    phoneCamRef.current = phone;
+    setPhoneCam(phone);
+    const old = camRef.current;
+    camRef.current = media;
+    setCam(media);
+    if (old && old !== media) old.getTracks().forEach((t) => t.stop());
+  }
+
+  /** The screen capture ended (our button or the browser's "Stop sharing"). */
+  function endScreen(media: MediaStream | null = screenRef.current) {
+    if (!media || screenRef.current !== media) return;
+    putScreen(null);
+    sync(); // the camera, if on, takes the whole stage
+  }
+
+  /** The camera ended (our button, the phone, or unplugged). */
+  function endCamera(media: MediaStream | null = camRef.current) {
+    if (!media || camRef.current !== media) return;
+    putCamera(null);
+    sync();
   }
 
   async function shareScreen(surface?: Surface) {
@@ -269,7 +321,13 @@ export default function HostView() {
           systemAudio: systemAudio ? "include" : "exclude",
         } as object),
       });
-      publish(media, "screen");
+      // The browser's own "Stop sharing" button ends the track.
+      media
+        .getVideoTracks()[0]
+        ?.addEventListener("ended", () => endScreen(media));
+      putScreen(media);
+      setNotice(null);
+      sync();
     } catch (err) {
       // NotAllowedError = the user closed the picker; nothing to report.
       if ((err as DOMException).name !== "NotAllowedError") console.error(err);
@@ -291,7 +349,13 @@ export default function HostView() {
         },
         audio: false, // voice comes from the mic button
       });
-      publish(media, "camera");
+      // Unplugging the webcam ends the track.
+      media
+        .getVideoTracks()[0]
+        ?.addEventListener("ended", () => endCamera(media));
+      putCamera(media);
+      setNotice(null);
+      sync();
     } catch (err) {
       const name = (err as DOMException).name;
       const missing =
@@ -302,19 +366,11 @@ export default function HostView() {
     }
   }
 
-  function stopSharing(media: MediaStream | null = stream) {
-    media?.getTracks().forEach((t) => t !== micRef.current && t.stop());
-    // An old capture ending after switching sources must not stop the new one.
-    if (media && streamRef.current !== media) return;
-    const usedPhone = phoneCamRef.current;
-    if (usedPhone) {
-      sessionRef.current?.phones.stop(usedPhone.id, "camera");
-      phoneCamRef.current = null;
-      setPhoneCam(null);
-    }
-    sessionRef.current?.setStream(null, quality);
-    setStream((current) => (current === media ? null : current));
-    setSource("");
+  /** Stop everything we share (screen and camera). */
+  function stopSharing() {
+    putScreen(null);
+    putCamera(null);
+    sync();
   }
 
   async function toggleMic() {
@@ -341,11 +397,7 @@ export default function HostView() {
       micRef.current = opened.track;
       setMicOn(true);
       // Add it to what we are sharing (viewers reconnect once to receive it).
-      const current = streamRef.current;
-      if (current) {
-        current.addTrack(opened.track);
-        sessionRef.current?.setStream(current, quality, source);
-      }
+      sync();
     } catch {
       setNotice(errorText("mic-denied"));
     }
@@ -371,10 +423,10 @@ export default function HostView() {
     setInfo(`Pedido enviado para ${phone.name}. Aceite no celular.`);
     session.phones.request(phone.id, "camera", {
       onStream: (media) => {
-        phoneCamRef.current = phone;
-        setPhoneCam(phone);
         setInfo(null);
-        publish(media, "camera", phone);
+        setNotice(null);
+        putCamera(media, phone);
+        sync();
       },
       onDeclined: (blocked) => {
         setInfo(null);
@@ -386,9 +438,9 @@ export default function HostView() {
       },
       onEnded: () => {
         if (phoneCamRef.current?.id !== phone.id) return;
-        phoneCamRef.current = null;
-        setPhoneCam(null);
-        stopSharing(streamRef.current);
+        phoneCamRef.current = null; // already over: nothing to tell the phone
+        putCamera(null);
+        sync();
         setNotice("A câmera do celular parou.");
       },
     });
@@ -404,7 +456,6 @@ export default function HostView() {
       onStream: (media) => {
         const track = media.getAudioTracks()[0];
         if (!track) return;
-        const old = micRef.current;
         micObjRef.current?.stop(); // this computer's mic is no longer needed
         micObjRef.current = null;
         phoneMicRef.current = phone;
@@ -412,12 +463,7 @@ export default function HostView() {
         micRef.current = track;
         track.enabled = !deafened && (!micSettings.pushToTalk || pttHeld);
         setMicOn(true);
-        const current = streamRef.current;
-        if (current) {
-          if (old) current.removeTrack(old);
-          current.addTrack(track);
-          sessionRef.current?.setStream(current, quality, source);
-        }
+        sync();
         setInfo(`Microfone do ${phone.name} ligado`);
       },
       onDeclined: (blocked) => {
@@ -430,16 +476,11 @@ export default function HostView() {
       },
       onEnded: () => {
         if (phoneMicRef.current?.id !== phone.id) return;
-        const track = micRef.current;
         phoneMicRef.current = null;
         setPhoneMic(null);
         micRef.current = null;
         setMicOn(false);
-        const current = streamRef.current;
-        if (current && track) {
-          current.removeTrack(track);
-          sessionRef.current?.setStream(current, quality, source);
-        }
+        sync();
         setNotice("O microfone do celular parou.");
       },
     });
@@ -448,23 +489,24 @@ export default function HostView() {
   /** Back to this computer's own microphone. */
   function backToComputerMic() {
     if (!phoneMicRef.current) return;
-    const track = micRef.current;
     closeMic();
     setMicOn(false);
-    const current = streamRef.current;
-    if (current && track) {
-      current.removeTrack(track);
-      sessionRef.current?.setStream(current, quality, source);
-    }
+    sync();
   }
 
   const clearNotice = useCallback(() => setNotice(null), []);
 
-  function changeCamera(id: string) {
+  /** Picked a webcam in the camera list: start it (or switch to it). */
+  function pickWebcam(id: string) {
+    setPicking(false);
     setCameraId(id);
     saveCameraId(id);
-    // Already on camera: switch to the new webcam right away.
-    if (source === "camera") void shareCamera(id);
+    void shareCamera(id);
+  }
+
+  function pickPhone(phone: Phone) {
+    setPicking(false);
+    sharePhoneCamera(phone);
   }
 
   function changeSystemAudio(on: boolean) {
@@ -490,9 +532,22 @@ export default function HostView() {
   }
 
   function toggleCamera() {
-    if (source === "camera") stopSharing();
+    if (cam) endCamera();
     else void shareCamera();
   }
+
+  // The list of cameras: under the camera button and on the empty stage.
+  const cameraMenu = (
+    <CameraMenu
+      webcamId={webcamId}
+      onWebcam={pickWebcam}
+      phones={phones}
+      phoneId={phoneCam?.id}
+      onPhone={pickPhone}
+      onStop={() => endCamera()}
+      onFlip={() => phoneCam && sessionRef.current?.phones.flip(phoneCam.id)}
+    />
+  );
 
   /** Leave the call: stop sharing and release the mic, but stay in the room. */
   function leaveCall() {
@@ -621,7 +676,21 @@ export default function HostView() {
                     </button>
                   </div>
                 )}
-                {!stream && inCall && (
+                {!stream && inCall && picking && (
+                  <div className="stage-empty">
+                    <div className="call-menu camera-pick">
+                      {cameraMenu}
+                      <button
+                        type="button"
+                        className="menu-row camera-pick-back"
+                        onClick={() => setPicking(false)}
+                      >
+                        Voltar
+                      </button>
+                    </div>
+                  </div>
+                )}
+                {!stream && inCall && !picking && (
                   <div className="stage-empty">
                     <p>Escolha o que você quer mostrar para a sala.</p>
                     <div className="share-choices">
@@ -635,23 +704,12 @@ export default function HostView() {
                       </button>
                       <button
                         className="share-btn is-secondary"
-                        onClick={() => void shareCamera()}
+                        onClick={() => setPicking(true)}
                         disabled={!ready}
                       >
                         <CameraIcon size={22} />
                         Compartilhar câmera
                       </button>
-                      {phones.map((p) => (
-                        <button
-                          key={p.id}
-                          className="share-btn is-secondary"
-                          onClick={() => sharePhoneCamera(p)}
-                          disabled={!ready}
-                        >
-                          <PhoneIcon size={22} />
-                          Câmera do {p.name}
-                        </button>
-                      ))}
                     </div>
                     {!ready && <p className="hint">Conectando ao servidor…</p>}
                   </div>
@@ -696,11 +754,18 @@ export default function HostView() {
                     ) : (
                       <>
                         <LiveIcon kind={source} />
-                        {source === "camera" ? "Câmera" : "Tela"} de{" "}
-                        {room.selfName || "você"}
+                        {corner
+                          ? "Tela e câmera"
+                          : source === "camera"
+                            ? "Câmera"
+                            : "Tela"}{" "}
+                        de {room.selfName || "você"}
                       </>
                     )}
                   </span>
+                )}
+                {corner && !previewHidden && !showGrid && !focused && (
+                  <CameraCorner stream={corner} mirrored={!phoneCam} />
                 )}
                 {stream && previewHidden && !showGrid && !focused && (
                   <div className="stage-empty stage-hidden">
@@ -763,16 +828,7 @@ export default function HostView() {
                       }
                     />
                   }
-                  cameraOptions={
-                    <CameraMenu
-                      cameraId={cameraId}
-                      onChange={changeCamera}
-                      phones={phones}
-                      phoneId={phoneCam?.id}
-                      onPhone={sharePhoneCamera}
-                      onPhoneStop={() => stopSharing()}
-                    />
-                  }
+                  cameraOptions={cameraMenu}
                   screenOptions={
                     <ScreenMenu
                       current={currentSurface(stream, source)}
@@ -799,7 +855,7 @@ export default function HostView() {
                     />
                   }
                   deafened={deafened}
-                  cameraOn={source === "camera"}
+                  cameraOn={!!cam}
                   onToggleMic={() => void toggleMic()}
                   onToggleDeafen={() => setDeafened((d) => !d)}
                   onToggleCamera={toggleCamera}

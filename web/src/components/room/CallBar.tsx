@@ -66,6 +66,8 @@ export default function CallBar(p: Props) {
         label={p.cameraOn ? "Parar câmera" : "Compartilhar câmera"}
         state={p.cameraOn ? "active" : "on"}
         onClick={p.onToggleCamera}
+        // Off: the click opens the list to pick which camera (webcam or phone).
+        clickOpens={!p.cameraOn}
         optionsLabel="Opções da câmera"
         options={p.cameraOptions}
       >
@@ -97,6 +99,7 @@ function CallButton({
   onClick,
   optionsLabel,
   options,
+  clickOpens,
   children,
 }: {
   label: string;
@@ -107,6 +110,8 @@ function CallButton({
   optionsLabel?: string;
   /** What the arrow opens; without it the arrow does nothing yet. */
   options?: ReactNode;
+  /** The main click opens the options instead of acting. */
+  clickOpens?: boolean;
   children: ReactNode;
 }) {
   const [open, setOpen] = useState(false);
@@ -135,7 +140,7 @@ function CallButton({
       <button
         type="button"
         className="call-btn"
-        onClick={onClick}
+        onClick={() => (clickOpens && options ? setOpen((o) => !o) : onClick())}
         aria-label={label}
       >
         {children}
@@ -156,7 +161,15 @@ function CallButton({
         </button>
       )}
       {open && options && (
-        <div className="call-menu" role="dialog" aria-label={optionsLabel}>
+        <div
+          className="call-menu"
+          role="dialog"
+          aria-label={optionsLabel}
+          // Picking a source (a webcam, a phone) closes the menu.
+          onClick={(e) =>
+            (e.target as HTMLElement).closest("[data-pick]") && setOpen(false)
+          }
+        >
           {options}
         </div>
       )}

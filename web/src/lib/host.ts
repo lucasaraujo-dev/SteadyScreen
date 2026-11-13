@@ -45,6 +45,8 @@ export class HostSession {
   private viewers = new Set<string>();
   private peers = new Map<string, Peer>();
   private stream: MediaStream | null = null;
+  /** The camera shown in a corner on top of the screen (screen + camera). */
+  private pip: MediaStream | null = null;
   private quality: Quality = "detail";
   private output: Output = DEFAULT_OUTPUT;
   private sharing: Sharing = "";
@@ -69,14 +71,18 @@ export class HostSession {
     );
   }
 
-  /** Start (or replace) the shared stream; pass null to pause sharing. */
+  /**
+   * Start (or replace) what is shared; pass null to pause sharing. `pip` is a
+   * camera sent along with the screen: viewers get it as the second video and
+   * show it in a corner.
+   */
   setStream(
     stream: MediaStream | null,
-    quality: Quality,
     sharing: Sharing = stream ? "screen" : "",
+    pip: MediaStream | null = null,
   ) {
     this.stream = stream;
-    this.quality = quality;
+    this.pip = stream ? pip : null;
     this.sharing = stream ? sharing : "";
     void this.applyCaptureRate();
     this.signaling.send("state", undefined, { sharing: this.sharing });
@@ -194,7 +200,11 @@ export class HostSession {
     const peer: Peer = { pc, pendingIce: [] };
     this.peers.set(id, peer);
 
-    for (const track of stream.getTracks()) pc.addTrack(track, stream);
+    // The main video goes first: viewers take the second video as the camera.
+    const tracks = [...stream.getVideoTracks(), ...stream.getAudioTracks()];
+    for (const track of tracks) pc.addTrack(track, stream);
+    const pip = this.pip;
+    for (const track of pip?.getVideoTracks() ?? []) pc.addTrack(track, pip!);
     pc.onicecandidate = (ev) => {
       if (ev.candidate)
         this.signaling.send("ice", id, { candidate: ev.candidate.toJSON() });
@@ -228,10 +238,12 @@ export class HostSession {
     const preset = QUALITY[this.quality];
     for (const sender of pc.getSenders()) {
       if (sender.track?.kind !== "video") continue;
-      sender.track.contentHint = this.contentHint();
+      // The corner camera is small: fluid motion and a modest bitrate.
+      const corner = !!this.pip?.getTracks().includes(sender.track);
+      sender.track.contentHint = corner ? "motion" : this.contentHint();
       const params = sender.getParameters();
       if (!params.encodings?.length) params.encodings = [{}];
-      params.encodings[0].maxBitrate = preset.maxBitrate;
+      params.encodings[0].maxBitrate = corner ? 1_500_000 : preset.maxBitrate;
       params.encodings[0].maxFramerate = this.output.fps;
       params.encodings[0].scaleResolutionDownBy = this.downscale(sender.track);
       (
