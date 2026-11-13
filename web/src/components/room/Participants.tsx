@@ -1,4 +1,13 @@
-import { CameraIcon, ScreenIcon } from "@/components/icons";
+"use client";
+
+import { useState } from "react";
+import {
+  CameraIcon,
+  HeadsetIcon,
+  HeadsetOffIcon,
+  ScreenIcon,
+} from "@/components/icons";
+import { DEFAULT_SOUND, type TileSound } from "@/components/room/StreamGrid";
 import { initials, type Participant } from "@/lib/room";
 
 type Props = {
@@ -8,6 +17,9 @@ type Props = {
   /** Host only: viewers whose video is connected, to show "assistindo". */
   watchingIds?: string[];
   hostSharing?: boolean;
+  /** How loud we hear each other person, by participant id. */
+  sounds: Record<string, TileSound>;
+  onSound: (id: string, sound: TileSound) => void;
 };
 
 /**
@@ -20,7 +32,11 @@ export default function Participants({
   maxViewers,
   watchingIds,
   hostSharing,
+  sounds,
+  onSound,
 }: Props) {
+  // Whose volume slider is open (one at a time).
+  const [openId, setOpenId] = useState<string | null>(null);
   const viewers = participants.filter((p) => p.role === "viewer").length;
   return (
     <aside className="people-rail" aria-label="Participantes">
@@ -59,7 +75,10 @@ export default function Participants({
               );
             }
             return (
-              <li key={p.id} className="person" title={p.name}>
+              <li
+                key={p.id}
+                className={`person${openId === p.id && !isSelf ? " is-open" : ""}`}
+              >
                 <span
                   className={`avatar${p.role === "host" ? " is-host" : ""}${isSelf ? " is-self" : ""}${p.avatar ? " has-photo" : ""}`}
                   aria-hidden
@@ -92,6 +111,17 @@ export default function Participants({
                   </span>
                 </span>
                 {status}
+                {!isSelf && (
+                  <PersonSound
+                    name={p.name}
+                    sound={sounds[p.id] ?? DEFAULT_SOUND}
+                    open={openId === p.id}
+                    onToggle={() =>
+                      setOpenId((o) => (o === p.id ? null : p.id))
+                    }
+                    onChange={(s) => onSound(p.id, s)}
+                  />
+                )}
               </li>
             );
           })}
@@ -103,5 +133,69 @@ export default function Participants({
         </ul>
       </div>
     </aside>
+  );
+}
+
+/** Headphones at the end of someone's row: opens mute + volume for them. */
+function PersonSound({
+  name,
+  sound,
+  open,
+  onToggle,
+  onChange,
+}: {
+  name: string;
+  sound: TileSound;
+  open: boolean;
+  onToggle: () => void;
+  onChange: (s: TileSound) => void;
+}) {
+  const silent = sound.muted || sound.volume === 0;
+  const level = sound.muted ? 0 : sound.volume;
+  return (
+    <>
+      <button
+        type="button"
+        className={`person-sound${silent ? " is-silent" : ""}${open ? " is-open" : ""}`}
+        onClick={onToggle}
+        aria-label={`Volume de ${name}`}
+        aria-expanded={open}
+      >
+        {silent ? <HeadsetOffIcon size={17} /> : <HeadsetIcon size={17} />}
+      </button>
+      {open && (
+        <div className="person-sound-panel">
+          <button
+            type="button"
+            className={`person-sound-mute${sound.muted ? " is-on" : ""}`}
+            onClick={() =>
+              onChange(
+                silent
+                  ? { volume: sound.volume || 100, muted: false }
+                  : { ...sound, muted: true },
+              )
+            }
+            aria-label={silent ? `Ativar som de ${name}` : `Mutar ${name}`}
+          >
+            {silent ? <HeadsetOffIcon size={15} /> : <HeadsetIcon size={15} />}
+          </button>
+          <input
+            type="range"
+            className="volume-range person-sound-range"
+            min={0}
+            max={100}
+            step={1}
+            value={level}
+            onChange={(e) =>
+              onChange({ volume: Number(e.target.value), muted: false })
+            }
+            onDoubleClick={() => onChange({ volume: 100, muted: false })}
+            style={{ "--fill": `${level}%` } as React.CSSProperties}
+            aria-label={`Volume de ${name}`}
+          />
+          <span className="person-sound-value">{level}%</span>
+        </div>
+      )}
+    </>
   );
 }

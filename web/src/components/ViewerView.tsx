@@ -10,7 +10,9 @@ import Participants from "@/components/room/Participants";
 import StageToolbar, { ToolButton } from "@/components/room/StageToolbar";
 import LiveIcon from "@/components/room/LiveIcon";
 import RoomNav from "@/components/room/RoomNav";
+import { DEFAULT_SOUND, type TileSound } from "@/components/room/StreamGrid";
 import { useRoom } from "@/components/room/useRoom";
+import { useRoomLock } from "@/components/room/useRoomLock";
 import { stageStyle, useVideoAspect } from "@/components/room/useVideoAspect";
 import { getConfig } from "@/lib/api";
 import { loadAudioSettings, routeTo } from "@/lib/audio";
@@ -38,6 +40,21 @@ export default function ViewerView() {
   const [hasAudio, setHasAudio] = useState(false);
   const [muted, setMuted] = useState(true);
   const [maxViewers, setMaxViewers] = useState(5);
+  // Volume / mute of each person in the list, by participant id.
+  const [peopleSound, setPeopleSound] = useState<Record<string, TileSound>>({});
+  useRoomLock();
+
+  // What we hear is the host's stream, so the host's row sets its volume.
+  const host = room.participants.find((p) => p.role === "host");
+  const hostSound = (host && peopleSound[host.id]) || DEFAULT_SOUND;
+  const hostSilent = hostSound.muted || hostSound.volume === 0;
+  const silent = muted || hostSilent;
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.volume = Math.min(1, hostSound.volume / 100);
+    video.muted = silent;
+  }, [hostSound.volume, silent]);
 
   const origin = useSyncExternalStore(
     noop,
@@ -86,11 +103,26 @@ export default function ViewerView() {
   }, [id, roomEvents]);
 
   function toggleSound() {
-    const video = videoRef.current;
-    if (!video) return;
-    video.muted = !video.muted;
-    setMuted(video.muted);
-    void video.play().catch(() => {});
+    if (silent) {
+      setMuted(false);
+      if (host && hostSilent)
+        changePersonSound(host.id, {
+          volume: hostSound.volume || 100,
+          muted: false,
+        });
+    } else {
+      setMuted(true);
+    }
+    void videoRef.current?.play().catch(() => {});
+  }
+
+  function changePersonSound(pid: string, s: TileSound) {
+    setPeopleSound((all) => ({ ...all, [pid]: s }));
+    // Turning someone up is also a click to hear the room.
+    if (pid === host?.id && !s.muted && s.volume > 0) {
+      setMuted(false);
+      void videoRef.current?.play().catch(() => {});
+    }
   }
 
   function fullscreen() {
@@ -113,8 +145,6 @@ export default function ViewerView() {
     );
   }
 
-  const host = room.participants.find((p) => p.role === "host");
-
   return (
     <div className="room">
       <RoomNav
@@ -130,6 +160,8 @@ export default function ViewerView() {
           participants={room.participants}
           selfId={room.selfId}
           maxViewers={maxViewers}
+          sounds={peopleSound}
+          onSound={changePersonSound}
         />
 
         <section className="room-center">
@@ -168,11 +200,11 @@ export default function ViewerView() {
                     <StageToolbar stageRef={stageRef} videoRef={videoRef}>
                       {hasAudio && (
                         <ToolButton
-                          label={muted ? "Ativar som" : "Silenciar"}
+                          label={silent ? "Ativar som" : "Silenciar"}
                           onClick={toggleSound}
-                          active={!muted}
+                          active={!silent}
                         >
-                          {muted ? (
+                          {silent ? (
                             <MuteIcon size={18} />
                           ) : (
                             <SoundIcon size={18} />

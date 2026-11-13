@@ -144,7 +144,6 @@ export function SoundControl({
             className="tile-sound-mute"
             onClick={() => onChange({ ...sound, muted: !sound.muted })}
             aria-label={sound.muted ? `Ativar som de ${name}` : `Mutar ${name}`}
-            title={sound.muted ? "Ativar som" : "Mutar"}
           >
             {silent ? <MuteIcon size={16} /> : <SoundIcon size={16} />}
           </button>

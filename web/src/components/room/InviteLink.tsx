@@ -27,7 +27,6 @@ export default function InviteLink({ link }: { link: string }) {
         className="invite-field"
         onClick={() => void copy()}
         aria-label={`Copiar o link da sala: ${link}`}
-        title="Clique para copiar"
       >
         {copied ? <CheckIcon size={18} /> : <LinkIcon size={18} />}
         <span className="invite-text">{link}</span>

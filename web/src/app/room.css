@@ -636,6 +636,112 @@
   font-weight: 600;
 }
 
+/* Headphones at the end of a row: volume / mute for that person. */
+.person-sound,
+.person-sound-panel {
+  display: none;
+}
+
+.island:hover .person-sound,
+.island:focus-within .person-sound {
+  display: grid;
+  animation: island-reveal 0.4s 0.12s ease both;
+}
+
+.person-sound {
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  margin-right: 4px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #eef0f4;
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s,
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.person-sound:hover,
+.person-sound.is-open {
+  background: rgba(255, 255, 255, 0.18);
+  transform: scale(1.08);
+}
+
+.person-sound.is-silent {
+  color: #ff8a91;
+  background: rgba(229, 36, 47, 0.18);
+}
+
+.person-sound:focus-visible,
+.person-sound-mute:focus-visible {
+  outline: 2px solid #eef0f4;
+  outline-offset: 1px;
+}
+
+.person.is-open {
+  flex-wrap: wrap;
+  row-gap: 4px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.island:hover .person-sound-panel,
+.island:focus-within .person-sound-panel {
+  display: flex;
+  animation: island-reveal 0.35s ease both;
+}
+
+.person-sound-panel {
+  flex-basis: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 12px 10px 8px;
+}
+
+.person-sound-mute {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #eef0f4;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.person-sound-mute:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.person-sound-mute.is-on {
+  color: #ff8a91;
+  background: rgba(229, 36, 47, 0.18);
+}
+
+.person-sound-range {
+  flex: 1;
+  min-width: 0;
+  height: 22px;
+}
+
+.person-sound-value {
+  width: 38px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 0.74rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
 @keyframes island-reveal {
   from {
     opacity: 0;
@@ -1622,7 +1728,7 @@ dialog.settings {
   .chat-wrap {
     height: 456px;
   }
-  /* The island becomes a row of avatars; names show on tap/hover as a tooltip (title). */
+  /* The island becomes a row of avatars. */
   .island,
   .island:hover,
   .island:focus-within {
@@ -1644,7 +1750,11 @@ dialog.settings {
   .island:hover .person-main,
   .island:focus-within .person-main,
   .island:hover .person-status,
-  .island:focus-within .person-status {
+  .island:focus-within .person-status,
+  .island:hover .person-sound,
+  .island:focus-within .person-sound,
+  .island:hover .person-sound-panel,
+  .island:focus-within .person-sound-panel {
     display: none;
   }
   .island-list {
@@ -2902,7 +3012,8 @@ dialog.settings {
   height: 22px;
 }
 /* Plain 0–100%: all blue, no 100% notch like the mic slider. */
-.tile-sound-range::-webkit-slider-runnable-track {
+.tile-sound-range::-webkit-slider-runnable-track,
+.person-sound-range::-webkit-slider-runnable-track {
   height: 6px;
   background: linear-gradient(
     to right,
@@ -2911,7 +3022,8 @@ dialog.settings {
     var(--track) var(--fill)
   );
 }
-.tile-sound-range::-webkit-slider-thumb {
+.tile-sound-range::-webkit-slider-thumb,
+.person-sound-range::-webkit-slider-thumb {
   width: 16px;
   height: 16px;
   margin-top: -5px;
@@ -2939,4 +3051,19 @@ dialog.settings {
 
 .chat-list::-webkit-scrollbar {
   display: none;
+}
+
+/* Nothing in a room can be selected except the chat bubbles' text and what
+   you type. (Right-click and Ctrl+A are blocked in useRoomLock.) */
+.room {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.room .msg-bubble,
+.room input,
+.room textarea {
+  user-select: text;
+  -webkit-user-select: text;
 }

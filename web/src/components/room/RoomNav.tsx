@@ -58,7 +58,6 @@ export default function RoomNav({
           className="icon-btn nav-home"
           transitionTypes={["nav-back"]}
           aria-label="Voltar para o início"
-          title="Início"
         >
           <HomeIcon size={19} />
         </Link>
@@ -67,7 +66,6 @@ export default function RoomNav({
           type="button"
           className={`nav-code${copied ? " is-copied" : ""}`}
           onClick={() => void copyCode()}
-          title="Clique para copiar o código"
           aria-label={`Código da sala: ${roomId}. Clique para copiar`}
         >
           #{roomId}
@@ -86,7 +84,6 @@ export default function RoomNav({
             className="icon-btn nav-gear"
             onClick={onOpenSettings}
             aria-label="Configurações"
-            title="Configurações"
           >
             <GearIcon size={19} />
           </button>
@@ -135,7 +132,6 @@ function NoticeBell({
         onClick={toggle}
         aria-label={unread ? `Notificações (${unread} novas)` : "Notificações"}
         aria-expanded={open}
-        title="Notificações"
       >
         {/* Re-keyed so the bell swings again on every new notice. */}
         <span key={unread} className={unread ? "bell-ring" : undefined}>

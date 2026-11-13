@@ -73,7 +73,7 @@ export default function ScreenMenu({
         </span>
         <span className="screen-now-text">
           <small>Compartilhando agora</small>
-          <strong title={currentLabel}>
+          <strong>
             {currentLabel && current !== "camera"
               ? `${now} · ${currentLabel}`
               : now}
@@ -90,7 +90,6 @@ export default function ScreenMenu({
               type="button"
               className={`screen-choice${c.surface === current ? " is-current" : ""}`}
               onClick={() => onPick(c.surface)}
-              title={c.hint}
             >
               {c.icon}
               <span>{c.label}</span>

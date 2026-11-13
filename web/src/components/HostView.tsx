@@ -23,6 +23,7 @@ import CallBar from "@/components/room/CallBar";
 import HeadsetMenu from "@/components/room/HeadsetMenu";
 import MicMenu from "@/components/room/MicMenu";
 import Toast from "@/components/room/Toast";
+import { useRoomLock } from "@/components/room/useRoomLock";
 import StreamGrid, {
   DEFAULT_SOUND,
   label as tileLabel,
@@ -101,6 +102,9 @@ export default function HostView() {
   const [sounds, setSounds] = useState<Record<string, TileSound>>({});
   const changeSound = (id: string, sound: TileSound) =>
     setSounds((all) => ({ ...all, [id]: sound }));
+  // Volume / mute of each person in the list, by participant id.
+  const [peopleSound, setPeopleSound] = useState<Record<string, TileSound>>({});
+  useRoomLock();
   const [cameraId, setCameraId] = useState<string>(loadCameraId);
   const [systemAudio, setSystemAudio] = useState<boolean>(loadSystemAudio);
   const [audioSettings, setAudioSettings] =
@@ -457,6 +461,8 @@ export default function HostView() {
           maxViewers={maxViewers}
           watchingIds={watchingIds}
           hostSharing={!!stream}
+          sounds={peopleSound}
+          onSound={(pid, s) => setPeopleSound((all) => ({ ...all, [pid]: s }))}
         />
 
         <section className="room-center">
