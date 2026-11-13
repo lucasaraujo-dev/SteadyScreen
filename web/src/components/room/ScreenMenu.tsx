@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  CameraIcon,
-  ScreenIcon,
-  TabIcon,
-  WindowIcon,
-} from "@/components/icons";
+import { ScreenIcon, TabIcon, WindowIcon } from "@/components/icons";
 import { Toggle } from "@/components/room/MenuControls";
 
 export type Surface = "monitor" | "window" | "browser";
@@ -54,36 +49,29 @@ export default function ScreenMenu({
   systemAudio,
   onSystemAudio,
 }: Props) {
-  const now =
-    current === "camera"
-      ? "Câmera"
-      : (CHOICES.find((c) => c.surface === current)?.label ?? "Tela");
+  const now = CHOICES.find((c) => c.surface === current)?.label ?? "Tela";
 
   return (
     <div className="mic-menu screen-menu">
-      <h3 className="menu-title">Transmissão</h3>
+      <h3 className="menu-title">Tela</h3>
 
-      <div className="screen-now">
-        <span className="screen-now-icon">
-          {current === "camera" ? (
-            <CameraIcon size={16} />
-          ) : (
+      {current !== "camera" && (
+        <div className="screen-now">
+          <span className="screen-now-icon">
             <ScreenIcon size={16} />
-          )}
-        </span>
-        <span className="screen-now-text">
-          <small>Compartilhando agora</small>
-          <strong>
-            {currentLabel && current !== "camera"
-              ? `${now} · ${currentLabel}`
-              : now}
-          </strong>
-        </span>
-      </div>
+          </span>
+          <span className="screen-now-text">
+            <small>Compartilhando agora</small>
+            <strong>{currentLabel ? `${now} · ${currentLabel}` : now}</strong>
+          </span>
+        </div>
+      )}
 
       <div className="menu-field">
         <span>
-          {current === "camera" ? "Mostrar a tela junto" : "Trocar para"}
+          {current === "camera"
+            ? "Compartilhar junto com a câmera"
+            : "Trocar para"}
         </span>
         <div className="screen-choices">
           {CHOICES.map((c) => (

@@ -9,6 +9,7 @@ import {
   MicIcon,
   MicOffIcon,
   PhoneOffIcon,
+  ScreenIcon,
   ScreenStopIcon,
 } from "@/components/icons";
 
@@ -16,6 +17,8 @@ type Props = {
   micOn: boolean;
   deafened: boolean;
   cameraOn: boolean;
+  /** The screen is being shared (the camera may be on without it). */
+  screenOn: boolean;
   /** Push-to-talk key label, when that mode is on. */
   pushToTalkKey?: string;
   /** Contents of the mic's options menu. */
@@ -29,7 +32,8 @@ type Props = {
   onToggleMic: () => void;
   onToggleDeafen: () => void;
   onToggleCamera: () => void;
-  onStopSharing: () => void;
+  /** Start sharing the screen, or stop it (the camera stays on). */
+  onToggleScreen: () => void;
   onLeaveCall: () => void;
 };
 
@@ -75,14 +79,16 @@ export default function CallBar(p: Props) {
       </CallButton>
 
       <CallButton
-        label="Parar de transmitir"
-        state="stop"
+        label={
+          p.screenOn ? "Parar de compartilhar a tela" : "Compartilhar tela"
+        }
+        state={p.screenOn ? "stop" : "on"}
         big
-        onClick={p.onStopSharing}
-        optionsLabel="Opções da transmissão"
+        onClick={p.onToggleScreen}
+        optionsLabel="Opções da tela"
         options={p.screenOptions}
       >
-        <ScreenStopIcon size={24} />
+        {p.screenOn ? <ScreenStopIcon size={24} /> : <ScreenIcon size={24} />}
       </CallButton>
 
       <CallButton label="Sair da chamada" state="leave" onClick={p.onLeaveCall}>

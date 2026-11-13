@@ -859,7 +859,10 @@ export default function HostView() {
                   onToggleMic={() => void toggleMic()}
                   onToggleDeafen={() => setDeafened((d) => !d)}
                   onToggleCamera={toggleCamera}
-                  onStopSharing={() => stopSharing()}
+                  screenOn={!!screen}
+                  onToggleScreen={() =>
+                    screen ? endScreen() : void shareScreen()
+                  }
                   onLeaveCall={leaveCall}
                 />
               )}
