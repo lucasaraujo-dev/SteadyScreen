@@ -1118,21 +1118,16 @@ code {
 }
 
 .join-icon {
-  width: 18px;
-  height: 18px;
+  display: flex;
   flex-shrink: 0;
-  fill: none;
-  stroke: var(--muted);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  color: var(--muted);
   transition:
     transform 0.5s var(--spring),
-    stroke 0.3s;
+    color 0.3s;
 }
 
 .join-field:focus-within .join-icon {
-  stroke: var(--text);
+  color: var(--text);
   transform: rotate(-20deg) scale(1.12);
 }
 
@@ -1197,14 +1192,7 @@ code {
     transform 0.15s ease;
 }
 
-.join-go svg {
-  width: 18px;
-  height: 18px;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.join-go .icon {
   transition: transform 0.4s var(--spring);
 }
 
@@ -1240,7 +1228,7 @@ code {
   opacity: 1;
 }
 
-.join.has-value .join-go:hover svg {
+.join.has-value .join-go:hover .icon {
   transform: translateX(3px);
 }
 

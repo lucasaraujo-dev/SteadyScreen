@@ -4,6 +4,13 @@
 .icon {
   flex-shrink: 0;
 }
+/* Onyx icons: the PNG is only a shape; the color is the text color. */
+.icon-img {
+  display: inline-block;
+  background: currentColor;
+  -webkit-mask: var(--icon) center / 118% no-repeat;
+  mask: var(--icon) center / 118% no-repeat;
+}
 
 .room {
   display: flex;

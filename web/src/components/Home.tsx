@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import AccountCard from "@/components/AccountCard";
 import AuthCard from "@/components/AuthCard";
+import { ArrowRightIcon, LinkIcon } from "@/components/icons";
 import InkButton from "@/components/InkButton";
 import Logo3D from "@/components/Logo3D";
 import { refreshAccount, useAccount } from "@/lib/account";
@@ -76,10 +77,9 @@ export default function Home() {
               onSubmit={join}
             >
               <label className="join-field">
-                <svg className="join-icon" viewBox="0 0 24 24" aria-hidden>
-                  <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L12 5.6" />
-                  <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2" />
-                </svg>
+                <span className="join-icon">
+                  <LinkIcon size={18} />
+                </span>
                 <input
                   className={isPlainCode ? "is-code" : undefined}
                   value={code}
@@ -97,9 +97,7 @@ export default function Home() {
                   aria-label="Assistir"
                 >
                   <span className="join-go-label">Assistir</span>
-                  <svg viewBox="0 0 24 24" aria-hidden>
-                    <path d="M5 12h14M13 6l6 6-6 6" />
-                  </svg>
+                  <ArrowRightIcon size={18} />
                 </button>
               </label>
               <p className="join-hint">

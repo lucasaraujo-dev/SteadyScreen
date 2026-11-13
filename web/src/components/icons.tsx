@@ -1,6 +1,24 @@
-// Small stroke icons (24x24, currentColor).
+// Small icons in the current text color. Most come from the Onyx set
+// (public/icons, drawn through a CSS mask so they take any color); the few
+// Onyx doesn't have stay as hand-drawn 24x24 strokes.
 
 type P = { size?: number };
+
+function Img({ name, size = 20 }: P & { name: string }) {
+  return (
+    <span
+      className="icon icon-img"
+      style={
+        {
+          width: size,
+          height: size,
+          "--icon": `url(/icons/${name}.png)`,
+        } as React.CSSProperties
+      }
+      aria-hidden
+    />
+  );
+}
 
 function Svg({ size = 20, children }: P & { children: React.ReactNode }) {
   return (
@@ -21,12 +39,7 @@ function Svg({ size = 20, children }: P & { children: React.ReactNode }) {
   );
 }
 
-export const ScreenIcon = (p: P) => (
-  <Svg {...p}>
-    <rect x="2.5" y="3.5" width="19" height="13" rx="2.5" />
-    <path d="M8 20.5h8M12 16.5v4" />
-  </Svg>
-);
+export const ScreenIcon = (p: P) => <Img name="monitor" {...p} />;
 
 export const GridIcon = (p: P) => (
   <Svg {...p}>
@@ -37,12 +50,7 @@ export const GridIcon = (p: P) => (
   </Svg>
 );
 
-export const CameraIcon = (p: P) => (
-  <Svg {...p}>
-    <rect x="2.5" y="6" width="13" height="12" rx="2.5" />
-    <path d="m15.5 10.5 6-3.5v10l-6-3.5" />
-  </Svg>
-);
+export const CameraIcon = (p: P) => <Img name="filmadora" {...p} />;
 
 export const StopIcon = (p: P) => (
   <Svg {...p}>
@@ -50,44 +58,17 @@ export const StopIcon = (p: P) => (
   </Svg>
 );
 
-export const GearIcon = (p: P) => (
-  <Svg {...p}>
-    <circle cx="12" cy="12" r="3" />
-    <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
-  </Svg>
-);
+export const GearIcon = (p: P) => <Img name="configuracoes" {...p} />;
 
-export const SendIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="M5 12h14M13 6l6 6-6 6" />
-  </Svg>
-);
+export const SendIcon = (p: P) => <Img name="enviar" {...p} />;
 
-export const LinkIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="M10 14a4.5 4.5 0 0 0 6.4 0l3.2-3.2a4.5 4.5 0 0 0-6.4-6.4L12 5.6" />
-    <path d="M14 10a4.5 4.5 0 0 0-6.4 0l-3.2 3.2a4.5 4.5 0 0 0 6.4 6.4l1.2-1.2" />
-  </Svg>
-);
+export const LinkIcon = (p: P) => <Img name="link" {...p} />;
 
-export const CopyIcon = (p: P) => (
-  <Svg {...p}>
-    <rect x="8" y="8" width="12" height="12" rx="2.5" />
-    <path d="M16 8V6.5A2.5 2.5 0 0 0 13.5 4h-7A2.5 2.5 0 0 0 4 6.5v7A2.5 2.5 0 0 0 6.5 16H8" />
-  </Svg>
-);
+export const CopyIcon = (p: P) => <Img name="copiar" {...p} />;
 
-export const CheckIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="m5 12.5 4.5 4.5L19 7.5" />
-  </Svg>
-);
+export const CheckIcon = (p: P) => <Img name="confirmar" {...p} />;
 
-export const CloseIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="M6 6l12 12M18 6 6 18" />
-  </Svg>
-);
+export const CloseIcon = (p: P) => <Img name="fechar" {...p} />;
 
 export const ExpandIcon = (p: P) => (
   <Svg {...p}>
@@ -95,19 +76,9 @@ export const ExpandIcon = (p: P) => (
   </Svg>
 );
 
-export const SoundIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="M11 5 6 9H3v6h3l5 4V5Z" />
-    <path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" />
-  </Svg>
-);
+export const SoundIcon = (p: P) => <Img name="volume-alto" {...p} />;
 
-export const MuteIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="M11 5 6 9H3v6h3l5 4V5Z" />
-    <path d="m16 9 5 6M21 9l-5 6" />
-  </Svg>
-);
+export const MuteIcon = (p: P) => <Img name="sem-som" {...p} />;
 
 export const ShrinkIcon = (p: P) => (
   <Svg {...p}>
@@ -122,12 +93,7 @@ export const PipIcon = (p: P) => (
   </Svg>
 );
 
-export const EyeIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
-    <circle cx="12" cy="12" r="3" />
-  </Svg>
-);
+export const EyeIcon = (p: P) => <Img name="olho" {...p} />;
 
 export const EyeOffIcon = (p: P) => (
   <Svg {...p}>
@@ -136,30 +102,13 @@ export const EyeOffIcon = (p: P) => (
   </Svg>
 );
 
-export const ChevronRightIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="m9 6 6 6-6 6" />
-  </Svg>
-);
+export const ChevronRightIcon = (p: P) => <Img name="chevron-direita" {...p} />;
 
-export const ChevronLeftIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="m15 6-6 6 6 6" />
-  </Svg>
-);
+export const ChevronLeftIcon = (p: P) => <Img name="chevron-esquerda" {...p} />;
 
-export const ChevronUpIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="m6 15 6-6 6 6" />
-  </Svg>
-);
+export const ChevronUpIcon = (p: P) => <Img name="chevron-cima" {...p} />;
 
-export const MicIcon = (p: P) => (
-  <Svg {...p}>
-    <rect x="9" y="2.5" width="6" height="11" rx="3" />
-    <path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5v4" />
-  </Svg>
-);
+export const MicIcon = (p: P) => <Img name="microfone" {...p} />;
 
 export const MicOffIcon = (p: P) => (
   <Svg {...p}>
@@ -168,12 +117,7 @@ export const MicOffIcon = (p: P) => (
   </Svg>
 );
 
-export const HeadsetIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="M3.5 18v-5a8.5 8.5 0 0 1 17 0v5" />
-    <path d="M20.5 15v3a2.5 2.5 0 0 1-2.5 2.5h-1V13h1a2.5 2.5 0 0 1 2.5 2.5M3.5 15v3A2.5 2.5 0 0 0 6 20.5h1V13H6a2.5 2.5 0 0 0-2.5 2.5" />
-  </Svg>
-);
+export const HeadsetIcon = (p: P) => <Img name="fones-de-ouvido" {...p} />;
 
 export const HeadsetOffIcon = (p: P) => (
   <Svg {...p}>
@@ -208,41 +152,14 @@ export const TabIcon = (p: P) => (
   </Svg>
 );
 
-export const BellIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="M6 9.5a6 6 0 0 1 12 0c0 4.5 1.8 6.2 2.5 7H3.5c.7-.8 2.5-2.5 2.5-7Z" />
-    <path d="M10 20a2.2 2.2 0 0 0 4 0" />
-  </Svg>
-);
+export const BellIcon = (p: P) => <Img name="sino" {...p} />;
 
-export const LockIcon = (p: P) => (
-  <Svg {...p}>
-    <rect x="4.5" y="10.5" width="15" height="10" rx="2.5" />
-    <path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" />
-  </Svg>
-);
+export const LockIcon = (p: P) => <Img name="cadeado" {...p} />;
 
-export const HomeIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="M3.5 10.5 12 3.5l8.5 7" />
-    <path d="M5.5 9v9.5a1.5 1.5 0 0 0 1.5 1.5h3.5v-5.5h3V20H17a1.5 1.5 0 0 0 1.5-1.5V9" />
-  </Svg>
-);
+export const HomeIcon = (p: P) => <Img name="inicio" {...p} />;
 
-export const TrashIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5M10 11v5M14 11v5" />
-  </Svg>
-);
+export const TrashIcon = (p: P) => <Img name="lixeira" {...p} />;
 
-export const LogOutIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="M14 4.5h3.5a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H14M10 8l-4 4 4 4M6 12h10" />
-  </Svg>
-);
+export const LogOutIcon = (p: P) => <Img name="sair" {...p} />;
 
-export const ArrowRightIcon = (p: P) => (
-  <Svg {...p}>
-    <path d="M5 12h14M13 6l6 6-6 6" />
-  </Svg>
-);
+export const ArrowRightIcon = (p: P) => <Img name="seta-direita" {...p} />;
