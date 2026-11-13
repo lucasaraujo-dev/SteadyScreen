@@ -1,0 +1,53 @@
+# Everything SteadyScreen needs on the VPS. Run from this folder:
+#   cp .env.example .env   (then fill it in)
+#   docker compose up -d --build
+#
+# The VPS's own nginx is the front door (HTTPS via certbot): it sends the
+# domain to the site and /api + /ws to the server. See nginx.conf.
+name: steadyscreen
+
+services:
+  web:
+    build:
+      context: ../web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${WEB_PORT:-3210}:3000"
+
+  server:
+    build:
+      context: ../server
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${SERVER_PORT:-8210}:8080"
+    environment:
+      ALLOWED_ORIGINS: https://${DOMAIN}
+      MAX_VIEWERS: ${MAX_VIEWERS:-5}
+      TURN_URLS: ${TURN_URLS:-}
+      TURN_USERNAME: ${TURN_USERNAME:-}
+      TURN_CREDENTIAL: ${TURN_CREDENTIAL:-}
+      # Ready for when accounts and chat history are saved.
+      DATABASE_URL: postgres://${POSTGRES_USER:-steadyscreen}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-steadyscreen}?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Database for accounts, chats and the like. Only reachable inside Docker
+  # (no port open to the internet); data lives in the postgres_data volume.
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-steadyscreen}
+      POSTGRES_USER: ${POSTGRES_USER:-steadyscreen}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

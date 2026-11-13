@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"log"
 	"math/big"
 	"sync"
@@ -11,7 +13,8 @@ import (
 )
 
 const (
-	// A room whose host is not connected is deleted after this long.
+	// A room whose host is not connected leaves memory after this long. It
+	// stays saved in the database and comes back when someone opens it.
 	roomIdleTTL = 10 * time.Minute
 	roomIDChars = "abcdefghjkmnpqrstuvwxyz23456789" // no 0/o/1/l/i
 	roomIDLen   = 6
@@ -19,13 +22,14 @@ const (
 
 // Room is one screen-sharing session: one host and up to MaxViewers viewers.
 type Room struct {
-	ID        string
-	HostToken string
-	CreatedAt time.Time
+	ID         string
+	HostToken  string
+	HostUserID int64 // the account that owns the room
+	CreatedAt  time.Time
 
 	host      *Client
 	viewers   map[string]*Client
-	idleSince time.Time // when the host was last seen (or the room was created)
+	idleSince time.Time     // when the host was last seen (or the room was created)
 	chat      []ChatMessage // recent history, sent to whoever joins
 }
 
@@ -34,32 +38,105 @@ type Hub struct {
 	mu    sync.Mutex
 	rooms map[string]*Room
 	cfg   Config
+	store *Store
+	auth  *Auth
 }
 
-func newHub(cfg Config) *Hub {
-	h := &Hub{rooms: make(map[string]*Room), cfg: cfg}
+func newHub(cfg Config, store *Store, auth *Auth) *Hub {
+	h := &Hub{rooms: make(map[string]*Room), cfg: cfg, store: store, auth: auth}
 	go h.janitor()
 	return h
 }
 
-func (h *Hub) createRoom() *Room {
+func newRoom(id string, hostUserID int64, createdAt time.Time) *Room {
+	return &Room{
+		ID:         id,
+		HostToken:  randomHex(16),
+		HostUserID: hostUserID,
+		CreatedAt:  createdAt,
+		viewers:    make(map[string]*Client),
+		idleSince:  time.Now(),
+	}
+}
+
+// createRoom makes a new room owned by userID and saves it.
+func (h *Hub) createRoom(ctx context.Context, userID int64) (*Room, error) {
+	for range 20 {
+		id := randomRoomID()
+		ok, err := h.store.insertRoom(ctx, id, userID)
+		if err != nil {
+			return nil, err
+		}
+		if !ok {
+			continue // id already used by another room
+		}
+		r := newRoom(id, userID, time.Now())
+		h.mu.Lock()
+		h.rooms[id] = r
+		h.mu.Unlock()
+		log.Printf("room %s created", id)
+		return r, nil
+	}
+	return nil, errors.New("no free room id")
+}
+
+// getRoom returns a room, loading it (and its recent chat) from the database
+// if it isn't in memory. nil means it doesn't exist.
+func (h *Hub) getRoom(ctx context.Context, id string) (*Room, error) {
+	h.mu.Lock()
+	r := h.rooms[id]
+	h.mu.Unlock()
+	if r != nil {
+		return r, nil
+	}
+	saved, err := h.store.roomByID(ctx, id)
+	if errors.Is(err, errNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	chat, err := h.store.recentChat(ctx, id, chatHistory)
+	if err != nil {
+		return nil, err
+	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	id := randomRoomID()
-	for h.rooms[id] != nil {
-		id = randomRoomID()
+	if r := h.rooms[id]; r != nil {
+		return r, nil // loaded by someone else meanwhile
 	}
-	now := time.Now()
-	r := &Room{
-		ID:        id,
-		HostToken: randomHex(16),
-		CreatedAt: now,
-		viewers:   make(map[string]*Client),
-		idleSince: now,
-	}
+	r = newRoom(saved.ID, saved.HostUserID, saved.CreatedAt)
+	r.chat = chat
 	h.rooms[id] = r
-	log.Printf("room %s created", id)
-	return r
+	return r, nil
+}
+
+// closeRoom drops a room from memory, telling everyone in it.
+func (h *Hub) closeRoom(id string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	r := h.rooms[id]
+	if r == nil {
+		return
+	}
+	r.broadcast(Message{Type: "error", Data: mustJSON(map[string]string{"reason": "room-closed"})})
+	if r.host != nil {
+		r.host.close()
+	}
+	for _, v := range r.viewers {
+		v.close()
+	}
+	delete(h.rooms, id)
+}
+
+// liveInfo tells whether a room's host is on and how many people watch.
+func (h *Hub) liveInfo(id string) (live bool, viewers int) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if r := h.rooms[id]; r != nil {
+		return r.host != nil, len(r.viewers)
+	}
+	return false, 0
 }
 
 // RoomInfo is the public view of a room.
@@ -70,34 +147,49 @@ type RoomInfo struct {
 	MaxViewers int    `json:"maxViewers"`
 }
 
-func (h *Hub) roomInfo(id string) (RoomInfo, bool) {
+func (h *Hub) roomInfo(ctx context.Context, id string) (RoomInfo, bool, error) {
+	r, err := h.getRoom(ctx, id)
+	if err != nil || r == nil {
+		return RoomInfo{}, false, err
+	}
 	h.mu.Lock()
 	defer h.mu.Unlock()
-	r := h.rooms[id]
-	if r == nil {
-		return RoomInfo{}, false
-	}
-	return RoomInfo{ID: r.ID, Live: r.host != nil, Viewers: len(r.viewers), MaxViewers: h.cfg.MaxViewers}, true
+	return RoomInfo{ID: r.ID, Live: r.host != nil, Viewers: len(r.viewers), MaxViewers: h.cfg.MaxViewers}, true, nil
 }
 
 // join attaches a client to a room. It returns an error code for the client
-// ("room-not-found", "bad-token", "room-full") or "" on success.
-func (h *Hub) join(c *Client, roomID, token, name string) string {
-	h.mu.Lock()
-	defer h.mu.Unlock()
-
-	r := h.rooms[roomID]
+// ("room-not-found", "bad-token", "room-full") or "" on success. Logged-in
+// people always show their account name; the room's owner can host it from
+// any browser, anyone else needs the room's host token.
+func (h *Hub) join(ctx context.Context, c *Client, roomID, token, name string, user *User) string {
+	r, err := h.getRoom(ctx, roomID)
+	if err != nil {
+		log.Printf("loading room %s: %v", roomID, err)
+		return "server-error"
+	}
 	if r == nil {
 		return "room-not-found"
 	}
+
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.rooms[roomID] != r {
+		return "room-closed" // deleted while it was loading
+	}
 	c.room = r
+	if user != nil {
+		c.userID = user.ID
+		name = user.Name
+	}
 	c.name = cleanName(name, c.role)
 	c.joinedAt = time.Now()
 
 	if c.role == roleHost {
-		if token != r.HostToken {
+		owner := user != nil && user.ID == r.HostUserID
+		if !owner && (token == "" || token != r.HostToken) {
 			return "bad-token"
 		}
+		go h.store.touchRoom(context.Background(), r.ID)
 		if old := r.host; old != nil {
 			// Same host reconnecting (e.g. a second tab): the newest one wins.
 			old.sendMsg(Message{Type: "error", Data: mustJSON(map[string]string{"reason": "replaced"})})

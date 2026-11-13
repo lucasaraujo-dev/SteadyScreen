@@ -123,7 +123,9 @@ export default function HostView() {
   // Connect to the signaling server as this room's host.
   const { roomEvents } = room;
   useEffect(() => {
-    if (!token) return;
+    // undefined = still prerendering. No token is fine: the room's owner is
+    // let in by their login; anyone else gets "bad-token" from the server.
+    if (token === undefined) return;
     let cancelled = false;
     getConfig()
       .then((cfg) => {
@@ -131,7 +133,7 @@ export default function HostView() {
         setMaxViewers(cfg.maxViewers);
         sessionRef.current = new HostSession(
           id,
-          token,
+          token ?? "",
           loadName(),
           cfg.iceServers,
           {
@@ -382,7 +384,7 @@ export default function HostView() {
     void sessionRef.current?.setQuality(q);
   }
 
-  const problem = token === null ? "bad-token" : error;
+  const problem = error;
   if (
     problem === "bad-token" ||
     problem === "server-offline" ||

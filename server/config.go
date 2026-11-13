@@ -12,6 +12,7 @@ type Config struct {
 	MaxViewers     int      // MAX_VIEWERS, default 5 (P2P mesh limit)
 	AllowedOrigins []string // ALLOWED_ORIGINS, comma separated; empty = allow any (dev only)
 	ICEServers     []ICEServer
+	DatabaseURL    string // DATABASE_URL, Postgres connection string (required)
 }
 
 // ICEServer mirrors the browser's RTCIceServer dictionary.
@@ -23,8 +24,9 @@ type ICEServer struct {
 
 func loadConfig() Config {
 	cfg := Config{
-		Addr:       envOr("ADDR", ":8080"),
-		MaxViewers: 5,
+		Addr:        envOr("ADDR", ":8080"),
+		MaxViewers:  5,
+		DatabaseURL: os.Getenv("DATABASE_URL"),
 	}
 	if v, err := strconv.Atoi(os.Getenv("MAX_VIEWERS")); err == nil && v > 0 {
 		cfg.MaxViewers = v

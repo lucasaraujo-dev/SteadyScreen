@@ -8,3 +8,6 @@ server/*.exe
 .DS_Store
 Thumbs.db
 server/*.exe~
+
+# Deploy secrets
+deploy/.env

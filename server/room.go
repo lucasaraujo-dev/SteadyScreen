@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
+	"log"
 	"sort"
 	"strings"
 	"time"
@@ -90,12 +92,22 @@ func (h *Hub) chatMessage(c *Client, data json.RawMessage) {
 	if r == nil || !r.isMember(c) {
 		return
 	}
-	msg := ChatMessage{ID: randomHex(6), From: c.id, Name: c.name, Text: text, At: time.Now().UnixMilli()}
+	msg := ChatMessage{ID: randomHex(8), From: c.id, Name: c.name, Text: text, At: time.Now().UnixMilli()}
 	r.chat = append(r.chat, msg)
 	if len(r.chat) > chatHistory {
 		r.chat = r.chat[len(r.chat)-chatHistory:]
 	}
 	r.broadcast(Message{Type: "chat", Data: mustJSON(msg)})
+
+	// Saved in the background so the chat never waits on the database.
+	roomID, userID := r.ID, c.userID
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := h.store.saveChat(ctx, roomID, userID, msg); err != nil {
+			log.Printf("saving chat in room %s: %v", roomID, err)
+		}
+	}()
 }
 
 func (h *Hub) rename(c *Client, data json.RawMessage) {
@@ -108,8 +120,8 @@ func (h *Hub) rename(c *Client, data json.RawMessage) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	r := c.room
-	if r == nil || !r.isMember(c) {
-		return
+	if r == nil || !r.isMember(c) || c.userID != 0 {
+		return // logged-in people always show their account name
 	}
 	c.name = cleanName(in.Name, c.role)
 	h.broadcastParticipants(r)

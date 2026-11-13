@@ -38,6 +38,8 @@ type Client struct {
 	role string
 	room *Room // set by Hub.join, guarded by Hub.mu
 
+	userID int64 // logged-in account, 0 for guests
+
 	// Guarded by Hub.mu.
 	name     string
 	sharing  string // "", "screen" or "camera" (host only)
@@ -160,6 +162,10 @@ func (h *Hub) serveWS(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "invalid role", http.StatusBadRequest)
 		return
 	}
+	var user *User
+	if u, ok := h.auth.currentUser(r); ok {
+		user = &u
+	}
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		return // Upgrade already wrote the HTTP error
@@ -173,7 +179,7 @@ func (h *Hub) serveWS(w http.ResponseWriter, r *http.Request) {
 	}
 	go c.writePump()
 
-	if code := h.join(c, q.Get("room"), q.Get("token"), q.Get("name")); code != "" {
+	if code := h.join(r.Context(), c, q.Get("room"), q.Get("token"), q.Get("name"), user); code != "" {
 		c.sendMsg(Message{Type: "error", Data: mustJSON(map[string]string{"reason": code})})
 		c.close()
 		return

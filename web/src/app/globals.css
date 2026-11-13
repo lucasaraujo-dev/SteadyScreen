@@ -111,8 +111,16 @@ code {
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(90% 55% at 15% 0%, rgba(255, 255, 255, 0.35), transparent 60%),
-    radial-gradient(70% 45% at 100% 100%, rgba(255, 255, 255, 0.12), transparent 60%);
+    radial-gradient(
+      90% 55% at 15% 0%,
+      rgba(255, 255, 255, 0.35),
+      transparent 60%
+    ),
+    radial-gradient(
+      70% 45% at 100% 100%,
+      rgba(255, 255, 255, 0.12),
+      transparent 60%
+    );
 }
 
 /* Cards are just a slightly brighter area of the same glass. */
@@ -241,7 +249,11 @@ code {
 
 .hero h1 {
   font-family: var(--font-display), var(--font-geist-sans), sans-serif;
-  font-size: clamp(1.9rem, 5vw, 3.1rem); /* Unbounded is wide: a bit smaller than before */
+  font-size: clamp(
+    1.9rem,
+    5vw,
+    3.1rem
+  ); /* Unbounded is wide: a bit smaller than before */
   font-weight: 700;
   line-height: 1.12;
   letter-spacing: -0.02em;
@@ -422,6 +434,552 @@ code {
   }
 }
 
+/* ---------- home: pitch on the left, account on the right ---------- */
+
+.home {
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  align-items: center;
+  gap: clamp(32px, 6vw, 96px);
+  min-height: calc(100vh - 140px);
+  padding-block: 4vh;
+}
+
+.home-intro {
+  text-align: left;
+}
+
+.home-intro .hero-brand {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+}
+
+.home-intro h1 {
+  max-width: 620px;
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: clamp(2rem, 4.4vw, 3.4rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  margin-bottom: 18px;
+}
+
+.home-intro > p {
+  max-width: 520px;
+  color: var(--muted);
+  font-size: 1.1rem;
+  margin-bottom: 40px;
+  text-shadow: 0 0 16px rgba(255, 255, 255, 0.7);
+}
+
+.home-intro .hero-actions {
+  justify-content: flex-start;
+}
+
+.home-alert {
+  margin-top: 8px;
+  max-width: 520px;
+}
+
+@media (max-width: 960px) {
+  .home {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+    gap: 40px;
+    padding-block: 2vh 0;
+  }
+  .home-intro {
+    text-align: center;
+  }
+  .home-intro .hero-brand,
+  .home-intro .hero-actions {
+    justify-content: center;
+  }
+  .home-intro h1,
+  .home-intro > p {
+    margin-inline: auto;
+  }
+  .home-side {
+    width: 100%;
+    max-width: 440px;
+    margin-inline: auto;
+  }
+}
+
+/* ---------- account cards (AuthCard.tsx, AccountCard.tsx) ---------- */
+
+.auth-card,
+.account-card {
+  padding: 22px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.34);
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow:
+    0 30px 70px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  animation: card-in 0.5s var(--spring) both;
+}
+
+.auth-card.is-loading {
+  min-height: 420px;
+  animation: card-pulse 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes card-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+}
+
+@keyframes card-pulse {
+  to {
+    opacity: 0.55;
+  }
+}
+
+/* "Entrar | Cadastrar": a glass pill with a white thumb sliding between. */
+.auth-pill {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 50px;
+  padding: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.auth-switch-thumb {
+  position: absolute;
+  top: 5px;
+  bottom: 5px;
+  left: 5px;
+  width: calc(50% - 5px);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+  transition: transform 0.5s var(--spring);
+}
+
+.auth-switch-thumb.is-right {
+  transform: translateX(100%);
+}
+
+.auth-btn {
+  position: relative;
+  flex: 1;
+  height: 100%;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.98rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    color 0.25s ease,
+    transform 0.15s ease;
+}
+
+.auth-btn.is-active {
+  color: var(--text);
+}
+
+.auth-btn:active {
+  transform: scale(0.96);
+}
+
+.auth-btn:focus-visible,
+.auth-submit:focus-visible,
+.auth-foot button:focus-visible,
+.auth-eye:focus-visible,
+.account-out:focus-visible,
+.room-row:focus-visible,
+.room-delete:focus-visible {
+  outline: 2px solid var(--text);
+  outline-offset: 2px;
+}
+
+.auth-head {
+  margin: 24px 4px 18px;
+}
+
+.auth-head h2 {
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 6px;
+}
+
+.auth-head p {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-field > span {
+  padding-left: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.auth-field input {
+  width: 100%;
+  height: 50px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.45);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  outline: none;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition:
+    background 0.25s ease,
+    box-shadow 0.35s var(--spring),
+    border-color 0.25s ease;
+}
+
+.auth-field input::placeholder {
+  color: rgba(17, 18, 20, 0.4);
+}
+
+.auth-field input:focus {
+  background: rgba(255, 255, 255, 0.75);
+  border-color: #fff;
+  box-shadow:
+    0 0 0 4px rgba(17, 18, 20, 0.08),
+    0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.auth-password {
+  position: relative;
+}
+
+.auth-password input {
+  padding-right: 52px;
+}
+
+.auth-eye {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+
+.auth-eye:hover {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--text);
+}
+
+.auth-error {
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(196, 38, 46, 0.1);
+  color: var(--danger);
+  font-size: 0.9rem;
+  font-weight: 500;
+  animation: card-in 0.4s var(--spring) both;
+}
+
+/* Black pill, springing a bit bigger on hover like the room buttons. */
+.auth-submit {
+  height: 54px;
+  margin-top: 6px;
+  border: 0;
+  border-radius: 999px;
+  background: #111214;
+  color: #fff;
+  font: inherit;
+  font-size: 1.02rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  transition:
+    transform 0.45s var(--spring),
+    box-shadow 0.3s ease,
+    opacity 0.2s ease;
+}
+
+.auth-submit:hover:not(:disabled) {
+  transform: scale(1.03);
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.24);
+}
+
+.auth-submit:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.auth-submit:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.auth-foot {
+  margin-top: 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.auth-foot button {
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+/* ---------- logged in ---------- */
+
+.account-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 4px 4px 18px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.account-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  background: #111214;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.account-who {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.account-who strong {
+  font-size: 1.08rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-who span {
+  color: var(--muted);
+  font-size: 0.88rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-out {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 38px;
+  padding: 0 14px;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.4);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.4s var(--spring);
+}
+
+.account-out:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.75);
+  transform: scale(1.05);
+}
+
+.account-rooms {
+  padding: 18px 4px 0;
+}
+
+.account-rooms h2 {
+  margin-bottom: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.account-empty {
+  padding: 18px 4px;
+  color: var(--muted);
+  font-size: 0.94rem;
+}
+
+.account-rooms ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 340px;
+  margin: 0 -4px;
+  padding: 4px;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.account-rooms li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.room-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 0;
+  height: 52px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.65);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.36);
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    background 0.2s ease,
+    transform 0.4s var(--spring);
+}
+
+.room-row:hover {
+  background: rgba(255, 255, 255, 0.7);
+  transform: scale(1.02);
+}
+
+.room-row .icon {
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: transform 0.4s var(--spring);
+}
+
+.room-row:hover .icon {
+  transform: translateX(3px);
+  color: var(--text);
+}
+
+.room-code {
+  font-family: var(--font-geist-mono), monospace;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+.room-when {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.is-live .room-when {
+  color: var(--live);
+  font-weight: 600;
+}
+
+.room-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--live);
+  box-shadow: 0 0 0 0 rgba(229, 36, 47, 0.5);
+  animation: live-ping 1.6s ease-out infinite;
+}
+
+@keyframes live-ping {
+  to {
+    box-shadow: 0 0 0 7px rgba(229, 36, 47, 0);
+  }
+}
+
+.room-delete {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.room-delete:hover {
+  background: rgba(196, 38, 46, 0.1);
+  color: var(--danger);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-card,
+  .account-card,
+  .auth-error {
+    animation: none;
+  }
+  .auth-switch-thumb,
+  .auth-submit,
+  .room-row,
+  .account-out {
+    transition-duration: 0.01s;
+  }
+}
+
 .join {
   position: relative;
   display: flex;
@@ -480,7 +1038,9 @@ code {
   stroke-width: 2;
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: transform 0.5s var(--spring), stroke 0.3s;
+  transition:
+    transform 0.5s var(--spring),
+    stroke 0.3s;
 }
 
 .join-field:focus-within .join-icon {
@@ -508,7 +1068,9 @@ code {
 
 .join-field input::placeholder {
   color: rgba(17, 18, 20, 0.45);
-  transition: opacity 0.25s, transform 0.35s var(--spring);
+  transition:
+    opacity 0.25s,
+    transform 0.35s var(--spring);
 }
 
 .join-field:focus-within input::placeholder {
@@ -563,7 +1125,10 @@ code {
   overflow: hidden;
   white-space: nowrap;
   opacity: 0;
-  transition: max-width 0.5s var(--spring), opacity 0.25s ease, margin 0.5s var(--spring);
+  transition:
+    max-width 0.5s var(--spring),
+    opacity 0.25s ease,
+    margin 0.5s var(--spring);
 }
 
 .join-go:disabled {
@@ -603,7 +1168,9 @@ code {
   color: var(--muted);
   opacity: 0;
   transform: translateY(-6px);
-  transition: opacity 0.3s ease, transform 0.45s var(--spring);
+  transition:
+    opacity 0.3s ease,
+    transform 0.45s var(--spring);
 }
 
 .join:focus-within .join-hint {
@@ -646,7 +1213,10 @@ code {
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    transform 0.15s;
 }
 
 .btn:hover:not(:disabled) {
@@ -673,7 +1243,9 @@ input:focus-visible {
   border-color: #111214;
   background: #111214;
   color: #fff;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  box-shadow:
+    0 10px 24px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .btn-primary:hover:not(:disabled) {

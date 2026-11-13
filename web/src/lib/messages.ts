@@ -1,12 +1,30 @@
 /** User-facing text for error codes coming from the server or the browser. */
 export function errorText(reason: string): string {
   switch (reason) {
+    // accounts
+    case "bad-credentials":
+      return "E-mail ou senha incorretos.";
+    case "email-taken":
+      return "Já existe uma conta com esse e-mail. Tente entrar.";
+    case "bad-email":
+      return "Esse e-mail não parece certo. Confira e tente de novo.";
+    case "name-required":
+      return "Diga seu nome para criar a conta.";
+    case "weak-password":
+      return "A senha precisa ter pelo menos 8 caracteres.";
+    case "long-password":
+      return "A senha pode ter no máximo 72 caracteres.";
+    case "too-many-attempts":
+      return "Muitas tentativas seguidas. Espere um minuto e tente de novo.";
+    case "not-logged-in":
+      return "Sua sessão terminou. Entre de novo para criar uma sala.";
+    // rooms
     case "room-not-found":
-      return "Essa sala não existe ou já expirou.";
+      return "Essa sala não existe ou foi excluída.";
     case "room-full":
       return "A sala está cheia. Nesta versão cabem até 5 pessoas assistindo.";
     case "bad-token":
-      return "Esta aba não tem permissão para compartilhar nesta sala.";
+      return "Só quem criou esta sala pode compartilhar nela. Entre com a conta dona da sala.";
     case "replaced":
       return "A transmissão foi aberta em outra aba. Esta aba foi desconectada.";
     case "room-closed":

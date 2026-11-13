@@ -228,3 +228,21 @@ export const HomeIcon = (p: P) => (
     <path d="M5.5 9v9.5a1.5 1.5 0 0 0 1.5 1.5h3.5v-5.5h3V20H17a1.5 1.5 0 0 0 1.5-1.5V9" />
   </Svg>
 );
+
+export const TrashIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5M10 11v5M14 11v5" />
+  </Svg>
+);
+
+export const LogOutIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M14 4.5h3.5a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H14M10 8l-4 4 4 4M6 12h10" />
+  </Svg>
+);
+
+export const ArrowRightIcon = (p: P) => (
+  <Svg {...p}>
+    <path d="M5 12h14M13 6l6 6-6 6" />
+  </Svg>
+);
