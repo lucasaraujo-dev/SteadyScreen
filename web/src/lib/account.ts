@@ -69,3 +69,8 @@ export async function logOutAccount() {
     set({ status: "guest" });
   }
 }
+
+/** Show the account the server just sent back (after changing a setting). */
+export function updateUser(user: User) {
+  set({ status: "user", user });
+}

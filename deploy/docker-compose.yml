@@ -28,6 +28,12 @@ services:
       TURN_URLS: ${TURN_URLS:-turn:${DOMAIN}:3478?transport=udp,turn:${DOMAIN}:3478?transport=tcp}
       TURN_SECRET: ${TURN_SECRET:?set TURN_SECRET in .env}
       DATABASE_URL: postgres://${POSTGRES_USER:-steadyscreen}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-steadyscreen}?sslmode=disable
+      # Email for the confirmation code (any SMTP service). Empty = off.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-}
     depends_on:
       postgres:
         condition: service_healthy

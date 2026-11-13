@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import Modal from "@/components/Modal";
 import {
   BoltIcon,
   CheckIcon,
@@ -20,9 +21,6 @@ type Props = {
   /** The video formats going out right now (one per viewer). */
   getFormats: () => Promise<VideoFormat[]>;
 };
-
-/** Length of the closing animation (dialog.settings.is-closing in room.css). */
-const CLOSE_MS = 200;
 
 const QUALITIES: {
   id: Quality;
@@ -53,47 +51,15 @@ export default function Settings({
   onQuality,
   getFormats,
 }: Props) {
-  const ref = useRef<HTMLDialogElement>(null);
-  // While true the dialog plays its closing animation, then really closes.
-  const [closing, setClosing] = useState(false);
-
-  useEffect(() => {
-    const dialog = ref.current;
-    if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
-    if (!open && dialog.open) dialog.close();
-  }, [open]);
-
-  // The parent may hand a new onClose each render; the timer must not restart.
-  const onCloseRef = useRef(onClose);
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  });
-
-  useEffect(() => {
-    if (!closing) return;
-    const t = window.setTimeout(() => {
-      setClosing(false);
-      onCloseRef.current();
-    }, CLOSE_MS);
-    return () => window.clearTimeout(t);
-  }, [closing]);
-
-  const close = () => setClosing(true);
-
   return (
-    <dialog
-      ref={ref}
-      className={`settings${closing ? " is-closing" : ""}`}
+    <Modal
+      open={open}
       onClose={onClose}
-      onCancel={(e) => {
-        e.preventDefault(); // Esc: animate out first
-        close();
-      }}
-      onClick={(e) => e.target === e.currentTarget && close()} // click on the backdrop
+      className="settings"
+      label="Configurações"
     >
-      {open && (
-        <div className="settings-body" onClick={(e) => e.stopPropagation()}>
+      {(close) => (
+        <div className="settings-body">
           <header className="settings-head">
             <span className="settings-badge">
               <GearIcon size={20} />
@@ -142,7 +108,7 @@ export default function Settings({
           <VideoFormats getFormats={getFormats} />
         </div>
       )}
-    </dialog>
+    </Modal>
   );
 }
 

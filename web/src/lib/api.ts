@@ -12,6 +12,10 @@ export type User = {
   id: number;
   name: string;
   email: string;
+  emailVerified: boolean;
+  phone: string;
+  /** "" when there's no photo. */
+  avatarUrl: string;
   createdAt: string;
 };
 export type MyRoom = {
@@ -90,6 +94,27 @@ export const signUp = (name: string, email: string, password: string) =>
 export const logIn = (email: string, password: string) =>
   post<{ user: User }>("/api/auth/login", { email, password });
 export const logOut = () => post<void>("/api/auth/logout");
+
+// Account settings: each answers with the account as it is now.
+type Me = { user: User };
+export const changeName = (name: string) => post<Me>("/api/me/name", { name });
+export const changePassword = (current: string, next: string) =>
+  post<Me>("/api/me/password", { current, new: next });
+export const changeEmail = (email: string, password: string) =>
+  post<Me>("/api/me/email", { email, password });
+export const sendEmailCode = () => post<void>("/api/me/email/code");
+export const confirmEmail = (code: string) =>
+  post<Me>("/api/me/email/confirm", { code });
+export const changePhone = (phone: string) =>
+  post<Me>("/api/me/phone", { phone });
+export const uploadAvatar = (photo: Blob) =>
+  request<Me>("/api/me/avatar", {
+    method: "PUT",
+    headers: { "Content-Type": photo.type },
+    body: photo,
+  });
+export const removeAvatar = () =>
+  post<Me>("/api/me/avatar", undefined, "DELETE");
 
 const tokenKey = (roomId: string) => `steadyscreen:host:${roomId}`;
 

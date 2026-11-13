@@ -60,6 +60,22 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 	created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS chat_room_idx ON chat_messages (room_id, created_at);
+
+-- Account settings (added later, so they're safe to apply to old databases).
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone          TEXT    NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar         BYTEA;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_type    TEXT    NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_version INT     NOT NULL DEFAULT 0;
+
+-- The code mailed to confirm an email address (only its hash is kept).
+CREATE TABLE IF NOT EXISTS email_codes (
+	user_id    BIGINT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+	email      TEXT NOT NULL,
+	code_hash  BYTEA NOT NULL,
+	expires_at TIMESTAMPTZ NOT NULL,
+	attempts   INT NOT NULL DEFAULT 0
+);
 `
 
 func openStore(ctx context.Context, url string) (*Store, error) {
@@ -90,31 +106,58 @@ func openStore(ctx context.Context, url string) (*Store, error) {
 
 // User is an account as the browser sees it (never the password hash).
 type User struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"createdAt"`
+	ID            int64     `json:"id"`
+	Name          string    `json:"name"`
+	Email         string    `json:"email"`
+	EmailVerified bool      `json:"emailVerified"`
+	Phone         string    `json:"phone"`
+	AvatarURL     string    `json:"avatarUrl"` // "" when there's no photo
+	CreatedAt     time.Time `json:"createdAt"`
+}
+
+// userCols is what every account query reads, in scanUser's order.
+const userCols = `u.id, u.name, u.email, u.email_verified, u.phone, u.avatar_version, u.created_at`
+
+func scanUser(row pgx.Row, extra ...any) (User, error) {
+	var u User
+	var avatarVersion int
+	err := row.Scan(append([]any{&u.ID, &u.Name, &u.Email, &u.EmailVerified, &u.Phone, &avatarVersion, &u.CreatedAt}, extra...)...)
+	if avatarVersion > 0 {
+		// The version changes with each new photo, so browsers can cache forever.
+		u.AvatarURL = "/api/avatars/" + strconv.FormatInt(u.ID, 10) + "?v=" + strconv.Itoa(avatarVersion)
+	}
+	return u, err
+}
+
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
 
 func (s *Store) createUser(ctx context.Context, name, email, hash string) (User, error) {
-	u := User{Name: name, Email: email}
-	err := s.db.QueryRow(ctx,
-		`INSERT INTO users (name, email, password_hash) VALUES ($1, $2, $3)
-		 RETURNING id, created_at`, name, email, hash).Scan(&u.ID, &u.CreatedAt)
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) && pgErr.Code == "23505" { // unique_violation
+	u, err := scanUser(s.db.QueryRow(ctx,
+		`INSERT INTO users AS u (name, email, password_hash) VALUES ($1, $2, $3)
+		 RETURNING `+userCols, name, email, hash))
+	if isUniqueViolation(err) {
 		return User{}, errEmailTaken
+	}
+	return u, err
+}
+
+func (s *Store) userByID(ctx context.Context, id int64) (User, error) {
+	u, err := scanUser(s.db.QueryRow(ctx, `SELECT `+userCols+` FROM users u WHERE u.id = $1`, id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return User{}, errNotFound
 	}
 	return u, err
 }
 
 // userByEmail returns the account and its password hash.
 func (s *Store) userByEmail(ctx context.Context, email string) (User, string, error) {
-	var u User
 	var hash string
-	err := s.db.QueryRow(ctx,
-		`SELECT id, name, email, created_at, password_hash FROM users WHERE lower(email) = lower($1)`,
-		email).Scan(&u.ID, &u.Name, &u.Email, &u.CreatedAt, &hash)
+	u, err := scanUser(s.db.QueryRow(ctx,
+		`SELECT `+userCols+`, u.password_hash FROM users u WHERE lower(u.email) = lower($1)`,
+		email), &hash)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return User{}, "", errNotFound
 	}
@@ -139,12 +182,11 @@ func (s *Store) createSession(ctx context.Context, userID int64, ttl time.Durati
 }
 
 func (s *Store) userBySession(ctx context.Context, token string) (User, error) {
-	var u User
-	err := s.db.QueryRow(ctx,
-		`SELECT u.id, u.name, u.email, u.created_at
+	u, err := scanUser(s.db.QueryRow(ctx,
+		`SELECT `+userCols+`
 		   FROM sessions s JOIN users u ON u.id = s.user_id
 		  WHERE s.token_hash = $1 AND s.expires_at > now()`,
-		tokenHash(token)).Scan(&u.ID, &u.Name, &u.Email, &u.CreatedAt)
+		tokenHash(token)))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return User{}, errNotFound
 	}
@@ -153,6 +195,13 @@ func (s *Store) userBySession(ctx context.Context, token string) (User, error) {
 
 func (s *Store) deleteSession(ctx context.Context, token string) error {
 	_, err := s.db.Exec(ctx, `DELETE FROM sessions WHERE token_hash = $1`, tokenHash(token))
+	return err
+}
+
+// deleteOtherSessions logs the account out everywhere except this browser.
+func (s *Store) deleteOtherSessions(ctx context.Context, userID int64, keepToken string) error {
+	_, err := s.db.Exec(ctx, `DELETE FROM sessions WHERE user_id = $1 AND token_hash <> $2`,
+		userID, tokenHash(keepToken))
 	return err
 }
 

@@ -31,12 +31,19 @@ var dummyHash, _ = bcrypt.GenerateFromPassword([]byte(randomHex(16)), bcryptCost
 
 // Auth handles accounts and login sessions.
 type Auth struct {
-	store   *Store
-	limiter *limiter
+	store       *Store
+	limiter     *limiter // password guesses per address
+	codeLimiter *limiter // confirmation emails per account
+	mail        *Mailer
 }
 
-func newAuth(store *Store) *Auth {
-	a := &Auth{store: store, limiter: newLimiter(10, time.Minute)}
+func newAuth(store *Store, mail *Mailer) *Auth {
+	a := &Auth{
+		store:       store,
+		limiter:     newLimiter(10, time.Minute),
+		codeLimiter: newLimiter(3, 10*time.Minute),
+		mail:        mail,
+	}
 	go func() {
 		for range time.Tick(time.Hour) {
 			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -52,6 +59,7 @@ func (a *Auth) routes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /api/auth/login", a.login)
 	mux.HandleFunc("POST /api/auth/logout", a.logout)
 	mux.HandleFunc("GET /api/me", a.me)
+	a.accountRoutes(mux)
 }
 
 // currentUser returns the logged-in account, if any.

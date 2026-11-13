@@ -18,6 +18,27 @@ export function errorText(reason: string): string {
       return "Muitas tentativas seguidas. Espere um minuto e tente de novo.";
     case "not-logged-in":
       return "Sua sessão terminou. Entre de novo para criar uma sala.";
+    // account settings
+    case "wrong-password":
+      return "A senha atual está errada.";
+    case "email-already-confirmed":
+      return "Esse e-mail já está confirmado.";
+    case "email-not-configured":
+      return "O envio de e-mails ainda não foi ligado no servidor.";
+    case "email-send-failed":
+      return "Não conseguimos enviar o e-mail agora. Tente de novo daqui a pouco.";
+    case "too-many-codes":
+      return "Você já pediu vários códigos. Espere uns minutos e tente de novo.";
+    case "wrong-code":
+      return "Código errado. Confira o e-mail e tente de novo.";
+    case "code-expired":
+      return "Esse código venceu. Peça um novo.";
+    case "bad-phone":
+      return "Esse número não parece certo. Use DDD e número, ou +código do país.";
+    case "avatar-too-big":
+      return "Essa imagem é grande demais. Tente outra.";
+    case "bad-image":
+      return "Esse arquivo não é uma imagem que dá para usar. Use JPG, PNG ou WebP.";
     // rooms
     case "room-not-found":
       return "Essa sala não existe ou foi excluída.";

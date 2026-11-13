@@ -1268,45 +1268,6 @@ dialog.settings {
     inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
-dialog.settings[open] {
-  animation: settings-in 0.4s var(--spring, cubic-bezier(0.34, 1.56, 0.64, 1));
-}
-
-@keyframes settings-in {
-  from {
-    opacity: 0;
-    transform: translateY(12px) scale(0.96);
-  }
-}
-
-dialog.settings::backdrop {
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(6px);
-  animation: settings-fade 0.25s ease;
-}
-
-/* Closing: sink and fade out, the backdrop too (200ms, see Settings.tsx). */
-dialog.settings.is-closing {
-  animation: settings-out 0.2s ease-in forwards;
-}
-
-dialog.settings.is-closing::backdrop {
-  animation: settings-fade 0.2s ease-in reverse forwards;
-}
-
-@keyframes settings-out {
-  to {
-    opacity: 0;
-    transform: translateY(10px) scale(0.95);
-  }
-}
-
-@keyframes settings-fade {
-  from {
-    opacity: 0;
-  }
-}
-
 .settings-body {
   display: flex;
   flex-direction: column;
@@ -2652,6 +2613,10 @@ dialog.settings.is-closing::backdrop {
   transition:
     opacity 0.3s,
     transform 0.3s;
+}
+.toast.is-ok {
+  border-color: rgba(47, 210, 122, 0.4);
+  background: rgba(12, 30, 20, 0.92);
 }
 .toast.is-leaving {
   opacity: 0;
