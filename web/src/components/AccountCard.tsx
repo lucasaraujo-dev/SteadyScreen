@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowRightIcon, LogOutIcon, TrashIcon } from "@/components/icons";
+import TabCard from "@/components/TabCard";
 import { logOutAccount } from "@/lib/account";
 import { deleteRoom, getMyRooms, type MyRoom, type User } from "@/lib/api";
 import { initials } from "@/lib/room";
@@ -45,7 +46,7 @@ export default function AccountCard({ user }: { user: User }) {
   }
 
   return (
-    <div className="account-card glass">
+    <TabCard title="Sua conta" className="account-card">
       <div className="account-head">
         <span className="account-avatar" aria-hidden>
           {initials(user.name)}
@@ -118,7 +119,7 @@ export default function AccountCard({ user }: { user: User }) {
           </ul>
         )}
       </div>
-    </div>
+    </TabCard>
   );
 }
 

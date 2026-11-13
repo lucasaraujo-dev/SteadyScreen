@@ -446,6 +446,17 @@ code {
   padding-block: 4vh;
 }
 
+/* Nothing on the home page can be selected except what you type. */
+.home {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.home input {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 .home-intro {
   text-align: left;
 }
@@ -511,20 +522,54 @@ code {
 
 /* ---------- account cards (AuthCard.tsx, AccountCard.tsx) ---------- */
 
-.auth-card,
-.account-card {
-  padding: 22px;
-  border-radius: 28px;
-  background: rgba(255, 255, 255, 0.34);
-  border-color: rgba(255, 255, 255, 0.7);
-  box-shadow:
-    0 30px 70px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+/* TabCard.tsx: the title sits in a tab merged into the card. The glass
+   (fill, line, shadow) is one SVG path, so tab and card never overlap. */
+.tab-card {
+  position: relative;
+  padding-top: 44px; /* the tab */
   animation: card-in 0.5s var(--spring) both;
 }
 
-.auth-card.is-loading {
+.tab-card-shape {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  pointer-events: none;
+  filter: drop-shadow(0 26px 40px rgba(0, 0, 0, 0.09));
+}
+
+.tab-card-shape path {
+  fill: rgba(255, 255, 255, 0.34);
+  stroke: rgba(255, 255, 255, 0.75);
+  stroke-width: 1;
+  transition: d 0.55s var(--spring);
+}
+
+.tab-card-title {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding-top: 2px;
+  font-family: var(--font-display), var(--font-geist-sans), sans-serif;
+  font-size: 0.98rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+
+.tab-card-body {
+  position: relative;
+  padding: 22px;
+}
+
+.card-skeleton {
   min-height: 420px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.24);
   animation: card-pulse 1.4s ease-in-out infinite alternate;
 }
 
@@ -609,7 +654,7 @@ code {
 }
 
 .auth-head {
-  margin: 24px 4px 18px;
+  margin: 18px 4px 18px;
 }
 
 .auth-head h2 {
@@ -638,28 +683,61 @@ code {
 }
 
 .auth-field > span {
-  padding-left: 6px;
+  padding-left: 22px;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--muted);
 }
 
-.auth-field input {
-  width: 100%;
+/* Glass pills that spring open (wider and taller) while you type in them
+   and close again when you leave, like the room-code and chat fields. The
+   size lives on the input, or on the password box around its input. */
+.auth-field > input,
+.auth-password {
   height: 50px;
-  padding: 0 18px;
+  margin-inline: 12px;
+  transition:
+    margin 0.55s var(--spring),
+    height 0.45s var(--spring);
+}
+
+.auth-field > input:focus,
+.auth-password:focus-within {
+  height: 58px;
+  margin-inline: 0;
+}
+
+.auth-field input {
+  width: calc(100% - 24px);
+  padding: 0 20px;
   border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.45);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.38);
   color: var(--text);
   font: inherit;
   font-size: 1rem;
   outline: none;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.85),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.04),
+    0 6px 18px rgba(0, 0, 0, 0.05);
   transition:
-    background 0.25s ease,
-    box-shadow 0.35s var(--spring),
-    border-color 0.25s ease;
+    width 0.55s var(--spring),
+    margin 0.55s var(--spring),
+    height 0.45s var(--spring),
+    padding 0.45s var(--spring),
+    background 0.3s ease,
+    box-shadow 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* Growing + the soft ring already show which field is active. */
+.auth-field input:focus-visible {
+  outline: none;
+}
+
+.auth-field input:hover {
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .auth-field input::placeholder {
@@ -667,15 +745,26 @@ code {
 }
 
 .auth-field input:focus {
+  width: 100%;
+  padding-left: 24px;
   background: rgba(255, 255, 255, 0.75);
-  border-color: #fff;
+  border-color: rgba(255, 255, 255, 0.95);
   box-shadow:
-    0 0 0 4px rgba(17, 18, 20, 0.08),
-    0 10px 24px rgba(0, 0, 0, 0.08);
+    inset 0 1px 0 #fff,
+    0 0 0 5px rgba(17, 18, 20, 0.07),
+    0 18px 38px rgba(0, 0, 0, 0.12);
 }
 
 .auth-password {
   position: relative;
+}
+
+/* Inside the password box the box does the sizing; the input just fills it. */
+.auth-password input,
+.auth-password input:focus {
+  width: 100%;
+  height: 100%;
+  margin: 0;
 }
 
 .auth-password input {
@@ -967,12 +1056,16 @@ code {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .auth-card,
-  .account-card,
+  .tab-card,
   .auth-error {
     animation: none;
   }
+  .tab-card-shape path {
+    transition: none;
+  }
   .auth-switch-thumb,
+  .auth-field input,
+  .auth-password,
   .auth-submit,
   .room-row,
   .account-out {

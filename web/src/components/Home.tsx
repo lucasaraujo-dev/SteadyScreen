@@ -113,7 +113,7 @@ export default function Home() {
 
       <aside className="home-side" aria-label="Sua conta">
         {account.status === "loading" && (
-          <div className="auth-card glass is-loading" aria-busy />
+          <div className="card-skeleton" aria-busy />
         )}
         {account.status === "guest" && <AuthCard />}
         {account.status === "user" && <AccountCard user={account.user} />}

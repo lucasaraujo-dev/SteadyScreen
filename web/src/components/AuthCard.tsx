@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { EyeIcon, EyeOffIcon } from "@/components/icons";
+import TabCard from "@/components/TabCard";
 import { logInAccount, signUpAccount } from "@/lib/account";
 import { ApiError } from "@/lib/api";
 import { errorText } from "@/lib/messages";
@@ -40,7 +41,10 @@ export default function AuthCard() {
   }
 
   return (
-    <div className="auth-card glass">
+    <TabCard
+      title={signup ? "Crie sua conta" : "Bem-vindo de volta"}
+      className="auth-card"
+    >
       <div className="auth-pill auth-switch" role="tablist" aria-label="Conta">
         <span
           className={`auth-switch-thumb${signup ? " is-right" : ""}`}
@@ -67,7 +71,6 @@ export default function AuthCard() {
       </div>
 
       <div className="auth-head">
-        <h2>{signup ? "Crie sua conta" : "Bem-vindo de volta"}</h2>
         <p>
           {signup
             ? "Com uma conta você cria salas e encontra todas elas aqui."
@@ -150,6 +153,6 @@ export default function AuthCard() {
           {signup ? "Entrar" : "Cadastre-se"}
         </button>
       </p>
-    </div>
+    </TabCard>
   );
 }
