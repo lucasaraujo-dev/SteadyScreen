@@ -12,7 +12,8 @@ type Props = {
   notices: RoomNotice[];
   unread: number;
   onOpenNotices: () => void;
-  onOpenSettings: () => void;
+  /** Host only: viewers have nothing to configure. */
+  onOpenSettings?: () => void;
 };
 
 const time = new Intl.DateTimeFormat("pt-BR", {
@@ -72,15 +73,17 @@ export default function RoomNav({
 
       <div className="nav-actions">
         <NoticeBell notices={notices} unread={unread} onOpen={onOpenNotices} />
-        <button
-          type="button"
-          className="icon-btn nav-gear"
-          onClick={onOpenSettings}
-          aria-label="Configurações"
-          title="Configurações"
-        >
-          <GearIcon size={19} />
-        </button>
+        {onOpenSettings && (
+          <button
+            type="button"
+            className="icon-btn nav-gear"
+            onClick={onOpenSettings}
+            aria-label="Configurações"
+            title="Configurações"
+          >
+            <GearIcon size={19} />
+          </button>
+        )}
       </div>
     </header>
   );

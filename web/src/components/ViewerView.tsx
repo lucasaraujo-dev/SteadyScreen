@@ -7,7 +7,6 @@ import { MuteIcon, SoundIcon } from "@/components/icons";
 import Chat from "@/components/room/Chat";
 import InviteLink from "@/components/room/InviteLink";
 import Participants from "@/components/room/Participants";
-import Settings from "@/components/room/Settings";
 import StageToolbar, { ToolButton } from "@/components/room/StageToolbar";
 import LiveIcon from "@/components/room/LiveIcon";
 import RoomNav from "@/components/room/RoomNav";
@@ -124,7 +123,6 @@ export default function ViewerView() {
         notices={room.notices}
         unread={room.unreadNotices}
         onOpenNotices={room.markNoticesSeen}
-        onOpenSettings={room.openSettings}
       />
 
       <div className="room-body">
@@ -198,13 +196,6 @@ export default function ViewerView() {
           onSend={(t) => sessionRef.current?.sendChat(t)}
         />
       </div>
-
-      <Settings
-        open={room.settingsOpen}
-        name={room.selfName}
-        onClose={room.closeSettings}
-        onRename={(n) => room.rename(n, (v) => sessionRef.current?.rename(v))}
-      />
     </div>
   );
 }

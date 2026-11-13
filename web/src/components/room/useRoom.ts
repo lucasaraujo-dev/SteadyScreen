@@ -2,7 +2,6 @@
 
 import { useMemo, useRef, useState } from "react";
 import {
-  saveName,
   type ChatMessage,
   type Participant,
   type RoomEvents,
@@ -84,10 +83,5 @@ export function useRoom() {
     settingsOpen,
     openSettings: () => setSettingsOpen(true),
     closeSettings: () => setSettingsOpen(false),
-    /** Persist locally and tell the room. */
-    rename: (name: string, send: (n: string) => void) => {
-      saveName(name);
-      send(name);
-    },
   };
 }

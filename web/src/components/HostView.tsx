@@ -672,9 +672,7 @@ export default function HostView() {
 
       <Settings
         open={room.settingsOpen}
-        name={room.selfName}
         onClose={room.closeSettings}
-        onRename={(n) => room.rename(n, (v) => sessionRef.current?.rename(v))}
         quality={quality}
         onQuality={changeQuality}
       />
